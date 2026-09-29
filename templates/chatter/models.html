@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Mes Modèles{% endblock %}
+{% block page_title %}👩 Mes modèles — {{ chatter.name }}{% endblock %}
+{% block content %}
+
+{% if models %}
+<div class="grid-cards">
+  {% for m in models %}
+  <div class="model-card {% if m.status == 'inactive' %}model-card-inactive{% endif %}">
+    <div class="model-card-header">
+      <div class="model-avatar">{{ m.name[0]|upper }}</div>
+      <div class="model-info">
+        <div class="model-name">{{ m.name }}</div>
+        {% if m.notes %}
+        <div class="model-meta">{{ m.notes }}</div>
+        {% endif %}
+      </div>
+      <span class="badge badge-{{ m.status }}">{{ m.status }}</span>
+    </div>
+    <div class="model-stats">
+      <span class="model-stat-chip text-muted" style="font-size:var(--fs-xs)">
+        Associé le {{ m.assigned_at|short(10) }}
+      </span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:40px">
+  <div style="font-size:48px;margin-bottom:12px">👩</div>
+  <p class="muted">Aucun modèle attribué pour le moment.</p>
+  <p class="muted small">Votre manager peut vous en attribuer depuis votre fiche.</p>
+</div>
+{% endif %}
+
+{% endblock %}

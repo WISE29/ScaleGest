@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Paies {{ month_name }} {{ year }}{% endblock %}
+{% block page_title %}🧾 Paies — {{ month_name }} {{ year }}{% endblock %}
+{% block content %}
+
+{% if is_locked %}
+<div class="alert alert-success">
+  🔒 Paies de {{ month_name }} {{ year }} <strong>validées et verrouillées</strong>.
+  <form method="post" action="{{ url_for('manager.payroll_unlock', year=year, month=month) }}" style="display:inline">
+    <button class="btn btn-sm btn-warning" onclick="return confirm('Déverrouiller ?')">Déverrouiller</button>
+  </form>
+</div>
+{% endif %}
+
+<div class="section-header">
+  <div class="action-group">
+    {% if not is_locked %}
+    <form method="post" action="{{ url_for('manager.payroll_generate', year=year, month=month) }}">
+      <button class="btn btn-primary">⟳ Recalculer</button>
+    </form>
+    <form method="post" action="{{ url_for('manager.payroll_validate', year=year, month=month) }}"
+          onsubmit="return confirm('Valider et verrouiller les paies de {{ month_name }} {{ year }} ?')">
+      <button class="btn btn-success">✓ Valider 🔒</button>
+    </form>
+    {% endif %}
+    <a href="{{ url_for('manager.payroll_pdf_all', year=year, month=month) }}" class="btn btn-ghost">⬇ ZIP PDFs</a>
+    <a href="{{ url_for('manager.export_csv', year=year, month=month) }}" class="btn btn-ghost">⬇ CSV</a>
+  </div>
+</div>
+
+{% if payrolls %}
+<div class="card">
+  <div class="card-title">Chatters</div>
+  <table class="table payroll-table">
+    <thead><tr><th>Chatter</th><th>CA Net</th><th>Commission 8%</th><th>+ Primes</th><th>− Malus</th><th>Net à payer</th><th>PDF</th></tr></thead>
+    <tbody>
+    {% for p in payrolls %}
+    <tr class="{% if p.validated %}row-validated{% endif %}">
+      <td>{{ p.chatter_name }} {% if p.validated %}<span class="badge badge-success">✓</span>{% endif %}</td>
+      <td>{{ "%.2f"|format(p.ca_net) }} €</td>
+      <td>{{ "%.2f"|format(p.base_commission) }} €</td>
+      <td class="positive">+{{ "%.2f"|format(p.total_bonuses) }} €</td>
+      <td class="negative">−{{ "%.2f"|format(p.total_penalties) }} €</td>
+      <td><strong class="text-accent">{{ "%.2f"|format(p.final_amount) }} €</strong></td>
+      <td><a href="{{ url_for('manager.payroll_pdf', year=year, month=month, chatter_id=p.chatter_id) }}" class="btn btn-xs btn-ghost" target="_blank">📄</a></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot><tr><td><strong>TOTAL</strong></td><td></td><td></td><td></td><td></td><td><strong class="text-accent">{{ "%.2f"|format(total_mass) }} €</strong></td><td></td></tr></tfoot>
+  </table>
+</div>
+{% else %}
+<div class="card"><p class="muted">Cliquez sur "Recalculer" pour générer les fiches.</p></div>
+{% endif %}
+
+<div class="card">
+  <div class="card-title">💼 Rémunération Manager</div>
+  <div class="rem-row"><span>CA des chatters</span><strong>{{ "%.2f"|format(mgr_rem.ca_chatters) }} €</strong></div>
+  <div class="rem-row"><span>CA personnel</span><strong>{{ "%.2f"|format(mgr_rem.ca_manager) }} €</strong></div>
+  <div class="rem-row"><span>CA total équipe</span><strong>{{ "%.2f"|format(mgr_rem.ca_total) }} €</strong></div>
+  <div class="rem-row positive"><span>Commission équipe (× 2 %)</span><strong>{{ "%.2f"|format(mgr_rem.commission_team) }} €</strong></div>
+  <div class="rem-row positive"><span>Commission personnelle (× 5 %)</span><strong>{{ "%.2f"|format(mgr_rem.commission_personal) }} €</strong></div>
+  <div class="rem-row rem-total"><span>= Total manager</span><strong>{{ "%.2f"|format(mgr_rem.total) }} €</strong></div>
+</div>
+
+<a href="{{ url_for('manager.payroll_list') }}" class="btn btn-ghost mt-1">← Retour</a>
+{% endblock %}

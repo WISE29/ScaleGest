@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Mes Fiches de Paie{% endblock %}
+{% block page_title %}🧾 Mes fiches de paie — {{ chatter.name }}{% endblock %}
+{% block content %}
+
+{% if payrolls %}
+<div class="grid-cards">
+  {% for p in payrolls %}
+  <div class="card payslip-card">
+    <div class="payslip-card-header">
+      <div class="payslip-period">{{ months_fr[p.month] }} {{ p.year }}</div>
+      <span class="badge badge-success">✓ Validée</span>
+    </div>
+    <div class="payslip-card-body">
+      <div class="rem-row">
+        <span>Commission de base</span>
+        <strong>{{ "%.2f"|format(p.base_commission) }} €</strong>
+      </div>
+      <div class="rem-row positive">
+        <span>+ Primes</span>
+        <strong>{{ "%.2f"|format(p.bonuses) }} €</strong>
+      </div>
+      <div class="rem-row negative">
+        <span>− Malus</span>
+        <strong>{{ "%.2f"|format(p.penalties) }} €</strong>
+      </div>
+      <div class="rem-row rem-total">
+        <span>Net à payer</span>
+        <strong>{{ "%.2f"|format(p.final_amount) }} €</strong>
+      </div>
+    </div>
+    <div class="card-actions">
+      <a href="{{ url_for('chatter_space.my_payslip_detail', year=p.year, month=p.month) }}"
+         class="btn btn-sm btn-primary">Voir le détail</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:40px">
+  <div style="font-size:48px;margin-bottom:12px">🧾</div>
+  <p class="muted">Aucune fiche de paie disponible pour l'instant.</p>
+  <p class="muted small">Les fiches apparaissent ici une fois validées par le manager.</p>
+</div>
+{% endif %}
+
+{% endblock %}

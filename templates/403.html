@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Accès refusé{% endblock %}
+{% block page_title %}403 — Accès refusé{% endblock %}
+{% block content %}
+<div class="card" style="text-align:center;padding:48px">
+  <div style="font-size:56px;margin-bottom:16px">🔒</div>
+  <h2 style="margin-bottom:8px">Accès refusé</h2>
+  <p class="muted">Vous n'avez pas les droits pour accéder à cette page.</p>
+  <div style="margin-top:24px">
+    <a href="{{ url_for('root') }}" class="btn btn-primary">← Retour</a>
+  </div>
+</div>
+{% endblock %}

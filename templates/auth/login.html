@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Connexion — Chatter Manager</title>
+  <script>
+    (function(){
+      var t = localStorage.getItem('cm-theme');
+      if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+    }());
+  </script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ asset_version }}" />
+</head>
+<body class="login-body">
+
+  <div class="login-card">
+
+    <div class="login-logo">
+      <div class="login-logo-icon">⚡</div>
+      <div class="login-logo-text">
+        <span>Chatter</span>
+        <strong>Manager</strong>
+      </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-wrap" style="margin-bottom:12px">
+          {% for cat, msg in messages %}
+            <div class="flash flash-{{ cat }}">{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <h2 class="login-title">Connexion</h2>
+
+    <form method="post" action="{{ url_for('auth.login') }}" class="login-form">
+      <div class="form-group">
+        <label for="username">Identifiant</label>
+        <input type="text" id="username" name="username"
+               placeholder="Votre identifiant"
+               autocomplete="username" required autofocus />
+      </div>
+      <div class="form-group">
+        <label for="password">Mot de passe</label>
+        <input type="password" id="password" name="password"
+               placeholder="••••••••"
+               autocomplete="current-password" required />
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">
+        Se connecter
+      </button>
+    </form>
+
+    <div class="login-footer">
+      <button class="theme-toggle" id="theme-toggle" aria-label="Thème clair / sombre">
+        <span class="t-icon t-sun">☀️</span>
+        <span class="t-icon t-moon">🌙</span>
+      </button>
+      <span class="login-version">V2.0</span>
+    </div>
+
+  </div>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}?v={{ asset_version }}"></script>
+</body>
+</html>

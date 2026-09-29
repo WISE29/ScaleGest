@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Ma Rémunération{% endblock %}
+{% block page_title %}💵 Ma Rémunération — {{ chatter.name }}{% endblock %}
+{% block content %}
+
+<!-- Sélecteur de mois -->
+<div class="filters-bar">
+  <form method="get" class="filters-form">
+    <select name="month" onchange="this.form.submit()">
+      {% for m in available_months %}
+      <option value="{{ m.month }}" data-year="{{ m.year }}"
+        {% if m.month == month and m.year == year %}selected{% endif %}>
+        {{ months_fr[m.month] }} {{ m.year }}
+      </option>
+      {% endfor %}
+    </select>
+    <input type="hidden" name="year" id="year-in" value="{{ year }}" />
+  </form>
+</div>
+
+<!-- Calcul -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">Calcul de rémunération — {{ month_name }} {{ year }}</div>
+    <div class="rem-row">
+      <span>CA net total</span>
+      <strong>{{ "%.2f"|format(stats.ca) }} €</strong>
+    </div>
+    <div class="rem-row">
+      <span>Taux de commission</span>
+      <strong>8 %</strong>
+    </div>
+    <div class="rem-row">
+      <span>Commission de base</span>
+      <strong>{{ "%.2f"|format(stats.base_commission) }} €</strong>
+    </div>
+    <div class="rem-row positive">
+      <span>+ Total primes</span>
+      <strong>{{ "%.2f"|format(stats.total_bonuses) }} €</strong>
+    </div>
+    <div class="rem-row negative">
+      <span>− Total malus</span>
+      <strong>{{ "%.2f"|format(stats.total_penalties) }} €</strong>
+    </div>
+    <div class="rem-row rem-total">
+      <span>= Net estimé</span>
+      <strong>{{ "%.2f"|format(stats.final_salary) }} €</strong>
+    </div>
+  </div>
+
+  <!-- KPIs rapides -->
+  <div class="grid-1">
+    <div class="card card-sm card-kpi">
+      <div class="card-label">CA du mois</div>
+      <div class="card-value-sm">{{ "%.2f"|format(stats.ca) }} €</div>
+    </div>
+    <div class="card card-sm card-kpi">
+      <div class="card-label">Jours travaillés</div>
+      <div class="card-value-sm">{{ stats.days }}</div>
+    </div>
+    <div class="card card-sm card-kpi card-accent">
+      <div class="card-label">Net estimé</div>
+      <div class="card-value-sm">{{ "%.2f"|format(stats.final_salary) }} €</div>
+    </div>
+  </div>
+</div>
+
+<!-- Primes -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">🎁 Primes — {{ month_name }} {{ year }}</div>
+    {% if bonuses %}
+    <table class="table">
+      <thead><tr><th>Date</th><th>Motif</th><th>Montant</th></tr></thead>
+      <tbody>
+      {% for b in bonuses %}
+      <tr>
+        <td>{{ b.date }}</td>
+        <td>{{ b.reason }}{% if b.comment %} <span class="text-muted">({{ b.comment }})</span>{% endif %}</td>
+        <td class="positive">+{{ "%.2f"|format(b.amount) }} €</td>
+      </tr>
+      {% endfor %}
+      <tr style="font-weight:600">
+        <td colspan="2">Total primes</td>
+        <td class="positive">+{{ "%.2f"|format(stats.total_bonuses) }} €</td>
+      </tr>
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted">Aucune prime ce mois-ci.</p>
+    {% endif %}
+  </div>
+
+  <!-- Malus -->
+  <div class="card">
+    <div class="card-title">⚠️ Malus — {{ month_name }} {{ year }}</div>
+    {% if penalties %}
+    <table class="table">
+      <thead><tr><th>Date</th><th>Motif</th><th>Montant</th></tr></thead>
+      <tbody>
+      {% for p in penalties %}
+      <tr>
+        <td>{{ p.date }}</td>
+        <td>{{ p.reason }}{% if p.comment %} <span class="text-muted">({{ p.comment }})</span>{% endif %}</td>
+        <td class="negative">−{{ "%.2f"|format(p.amount) }} €</td>
+      </tr>
+      {% endfor %}
+      <tr style="font-weight:600">
+        <td colspan="2">Total malus</td>
+        <td class="negative">−{{ "%.2f"|format(stats.total_penalties) }} €</td>
+      </tr>
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted">Aucun malus ce mois-ci.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+document.querySelector('select[name="month"]')?.addEventListener('change', function () {
+  var opt = this.options[this.selectedIndex];
+  if (opt && opt.dataset.year) document.getElementById('year-in').value = opt.dataset.year;
+});
+</script>
+{% endblock %}

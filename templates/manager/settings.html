@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Paramètres{% endblock %}
+{% block page_title %}⚙️ Paramètres{% endblock %}
+{% block content %}
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">Règles de rémunération</div>
+    <table class="table">
+      <tbody>
+        <tr><td>Commission chatter</td><td><strong>8 % du CA net</strong></td></tr>
+        <tr><td>Commission équipe (manager)</td><td><strong>2 % du CA total</strong></td></tr>
+        <tr><td>Commission personnelle (manager)</td><td><strong>5 % du CA perso</strong></td></tr>
+      </tbody>
+    </table>
+    <p class="muted small mt-1">Configurables en V3.</p>
+  </div>
+  <div class="card">
+    <div class="card-title">Base de données</div>
+    <p class="text-muted">PostgreSQL — connexion via <code>DATABASE_URL</code></p>
+  </div>
+</div>
+<div class="card">
+  <div class="card-title">📋 50 dernières actions</div>
+  {% if logs %}
+  <table class="table">
+    <thead><tr><th>Date</th><th>Action</th><th>Description</th></tr></thead>
+    <tbody>
+    {% for log in logs %}
+    <tr>
+      <td class="text-muted">{{ log.timestamp }}</td>
+      <td><span class="badge-log">{{ log.action }}</span></td>
+      <td>{{ log.description }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p class="muted">Aucune action.</p>{% endif %}
+</div>
+{% endblock %}

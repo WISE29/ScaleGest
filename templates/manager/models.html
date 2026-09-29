@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Modèles{% endblock %}
+{% block page_title %}👩 Modèles{% endblock %}
+{% block content %}
+
+<div class="section-header">
+  <div></div>
+  <a href="{{ url_for('manager.model_add') }}" class="btn btn-primary">+ Ajouter un modèle</a>
+</div>
+
+<!-- Actifs -->
+<h3 class="section-title">Actifs</h3>
+<div class="grid-cards">
+{% for m in models if m.status == 'active' %}
+<div class="model-card">
+  <div class="model-card-header">
+    <div class="model-avatar">{{ m.name[0]|upper }}</div>
+    <div class="model-info">
+      <div class="model-name">{{ m.name }}</div>
+      {% if m.notes %}<div class="model-meta">{{ m.notes }}</div>{% endif %}
+    </div>
+    <span class="badge badge-active">Actif</span>
+  </div>
+  <div class="model-stats">
+    <span class="model-stat-chip">
+      👥 {{ counts[m.id] }} chatter{% if counts[m.id] != 1 %}s{% endif %}
+    </span>
+  </div>
+  <div class="model-card-actions">
+    <a href="{{ url_for('manager.model_detail', model_id=m.id) }}" class="btn btn-sm btn-primary">Voir</a>
+    <a href="{{ url_for('manager.model_edit', model_id=m.id) }}" class="btn btn-sm btn-ghost">Modifier</a>
+    <form method="post" action="{{ url_for('manager.model_toggle', model_id=m.id) }}" style="display:inline"
+          onsubmit="return confirm('Désactiver « {{ m.name }} » ?')">
+      <button class="btn btn-sm btn-warning">Désactiver</button>
+    </form>
+  </div>
+</div>
+{% else %}
+<p class="muted">Aucun modèle actif. <a href="{{ url_for('manager.model_add') }}">En ajouter un →</a></p>
+{% endfor %}
+</div>
+
+<!-- Inactifs -->
+{% set inactive = models|selectattr('status','eq','inactive')|list %}
+{% if inactive %}
+<h3 class="section-title mt-2">Inactifs</h3>
+<div class="grid-cards">
+{% for m in inactive %}
+<div class="model-card model-card-inactive">
+  <div class="model-card-header">
+    <div class="model-avatar" style="opacity:.5">{{ m.name[0]|upper }}</div>
+    <div class="model-info"><div class="model-name">{{ m.name }}</div></div>
+    <span class="badge badge-inactive">Inactif</span>
+  </div>
+  <div class="model-card-actions">
+    <a href="{{ url_for('manager.model_detail', model_id=m.id) }}" class="btn btn-sm btn-ghost">Voir</a>
+    <a href="{{ url_for('manager.model_edit', model_id=m.id) }}" class="btn btn-sm btn-ghost">Modifier</a>
+    <form method="post" action="{{ url_for('manager.model_toggle', model_id=m.id) }}" style="display:inline">
+      <button class="btn btn-sm btn-secondary">Réactiver</button>
+    </form>
+  </div>
+</div>
+{% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

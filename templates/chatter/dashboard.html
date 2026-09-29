@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Mon Dashboard{% endblock %}
+{% block page_title %}Bonjour {{ chatter.name }} 👋{% endblock %}
+{% block content %}
+
+<!-- KPIs personnels -->
+<div class="grid-4">
+  <div class="card card-accent card-kpi">
+    <div class="card-label">CA du mois</div>
+    <div class="card-value">{{ "%.2f"|format(stats.ca) }} €</div>
+    <div class="card-sub">{{ stats.days }} jour{% if stats.days > 1 %}s{% endif %} travaillé{% if stats.days > 1 %}s{% endif %}</div>
+  </div>
+  <div class="card card-kpi">
+    <div class="card-label">Classement</div>
+    <div class="card-value">
+      {% if rank > 0 %}
+        <span class="rank rank-{{ rank }}">#{{ rank }}</span>
+      {% else %}—{% endif %}
+    </div>
+    <div class="card-sub">{{ month_name }} {{ year }}</div>
+  </div>
+  <div class="card card-kpi">
+    <div class="card-label">Rémunération estimée</div>
+    <div class="card-value text-accent">{{ "%.2f"|format(stats.final_salary) }} €</div>
+    <div class="card-sub">Commission 8 % + primes − malus</div>
+  </div>
+  <div class="card card-kpi">
+    <div class="card-label">Mon shift</div>
+    <div class="card-value" style="font-size:var(--fs-xl)">
+      {% if shift_start and shift_end %}
+        {{ shift_start }} → {{ shift_end }}
+      {% else %}
+        <span class="text-muted" style="font-size:var(--fs-md)">Non défini</span>
+      {% endif %}
+    </div>
+    <div class="card-sub"><a href="{{ url_for('chatter_space.my_shift') }}">Voir mon shift →</a></div>
+  </div>
+</div>
+
+<!-- Détail rémunération -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">💵 Détail rémunération — {{ month_name }} {{ year }}</div>
+    <div class="rem-row">
+      <span>CA net</span>
+      <strong>{{ "%.2f"|format(stats.ca) }} €</strong>
+    </div>
+    <div class="rem-row">
+      <span>Commission de base (× 8 %)</span>
+      <strong>{{ "%.2f"|format(stats.base_commission) }} €</strong>
+    </div>
+    <div class="rem-row positive">
+      <span>+ Primes</span>
+      <strong>{{ "%.2f"|format(stats.total_bonuses) }} €</strong>
+    </div>
+    <div class="rem-row negative">
+      <span>− Malus</span>
+      <strong>{{ "%.2f"|format(stats.total_penalties) }} €</strong>
+    </div>
+    <div class="rem-row rem-total">
+      <span>= Net estimé</span>
+      <strong>{{ "%.2f"|format(stats.final_salary) }} €</strong>
+    </div>
+    <div class="card-actions">
+      <a href="{{ url_for('chatter_space.my_remuneration') }}" class="btn btn-ghost">Détail complet →</a>
+    </div>
+  </div>
+
+  <!-- Dernière fiche de paie -->
+  <div class="card">
+    <div class="card-title">🧾 Dernière fiche de paie</div>
+    {% if last_payroll %}
+    <div class="payslip-preview">
+      <div class="payslip-period">{{ months_fr[last_payroll.month] }} {{ last_payroll.year }}</div>
+      <div class="payslip-amount">{{ "%.2f"|format(last_payroll.final_amount) }} €</div>
+      <div class="payslip-detail">
+        <span>CA : {{ "%.2f"|format(last_payroll.base_commission / 0.08) }} €</span>
+        <span>Commission : {{ "%.2f"|format(last_payroll.base_commission) }} €</span>
+      </div>
+    </div>
+    <div class="card-actions">
+      <a href="{{ url_for('chatter_space.my_payslip_detail', year=last_payroll.year, month=last_payroll.month) }}"
+         class="btn btn-ghost">Voir la fiche →</a>
+      <a href="{{ url_for('chatter_space.my_payslips') }}" class="btn btn-ghost">Toutes les fiches →</a>
+    </div>
+    {% else %}
+    <p class="muted">Aucune fiche de paie disponible pour l'instant.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Accès rapides -->
+<div class="quick-actions">
+  <a href="{{ url_for('chatter_space.my_ca') }}" class="btn btn-primary">📊 Mon CA</a>
+  <a href="{{ url_for('chatter_space.my_shift') }}" class="btn btn-secondary">🕐 Mon shift</a>
+  <a href="{{ url_for('chatter_space.my_remuneration') }}" class="btn btn-secondary">💵 Rémunération</a>
+  <a href="{{ url_for('chatter_space.my_payslips') }}" class="btn btn-secondary">🧾 Fiches de paie</a>
+</div>
+
+{% endblock %}

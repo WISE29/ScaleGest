@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Saisie CA{% endblock %}
+{% block page_title %}💰 Saisie du CA{% endblock %}
+{% block content %}
+
+<div class="date-nav">
+  <a href="{{ url_for('manager.sales', date=(sel_date|date_prev)) }}" class="btn btn-ghost">← Précédent</a>
+  <form method="get"><input type="date" name="date" value="{{ sel_date }}" onchange="this.form.submit()" /></form>
+  <a href="{{ url_for('manager.sales', date=(sel_date|date_next)) }}" class="btn btn-ghost">Suivant →</a>
+  <a href="{{ url_for('manager.sales') }}" class="btn btn-secondary">Aujourd'hui</a>
+</div>
+
+<form method="post" action="{{ url_for('manager.sales_save') }}">
+  <input type="hidden" name="date" value="{{ sel_date }}" />
+
+  <div class="card">
+    <div class="card-title">CA des chatters — {{ sel_date }}</div>
+    <table class="table sales-table">
+      <thead><tr><th>Chatter</th><th>Shift</th><th>CA (€)</th></tr></thead>
+      <tbody>
+      {% for c in chatters %}
+      <tr>
+        <td><a href="{{ url_for('manager.chatter_detail', chatter_id=c.id) }}">{{ c.name }}</a></td>
+        <td class="text-muted">
+          {% if c.shift_start and c.shift_end %}{{ c.shift_start|short }} → {{ c.shift_end|short }}{% else %}—{% endif %}
+        </td>
+        <td><input type="number" name="ca_{{ c.id }}" value="{{ sales_map.get(c.id, 0) }}" min="0" step="0.01" class="ca-input" placeholder="0.00" /></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="3" class="muted">Aucun chatter actif.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">CA Manager — {{ sel_date }}</div>
+    <table class="table sales-table">
+      <thead><tr><th>Manager</th><th></th><th>CA (€)</th></tr></thead>
+      <tbody>
+      <tr>
+        <td>CA personnel manager</td><td></td>
+        <td><input type="number" name="ca_manager" value="{{ manager_ca }}" min="0" step="0.01" class="ca-input" placeholder="0.00" /></td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="form-actions">
+    <div class="sales-total-display">Total chatters : <strong id="sales-total">0.00 €</strong></div>
+    <button type="submit" class="btn btn-primary btn-lg">💾 Enregistrer</button>
+  </div>
+</form>
+{% endblock %}

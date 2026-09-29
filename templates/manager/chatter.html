@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block title %}{{ chatter.name }}{% endblock %}
+{% block page_title %}👤 {{ chatter.name }}{% endblock %}
+{% block content %}
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">Informations</div>
+    <div class="info-row"><span>Statut</span><span class="badge badge-{{ chatter.status }}">{{ chatter.status }}</span></div>
+    <div class="info-row"><span>Date d'arrivée</span><span>{{ chatter.date_joined }}</span></div>
+    <div class="info-row">
+      <span>Shift permanent</span>
+      <strong>
+        {% if chatter.shift_start and chatter.shift_end %}
+          {{ chatter.shift_start|short }} → {{ chatter.shift_end|short }}
+        {% else %}<span class="text-muted">Non défini</span>{% endif %}
+      </strong>
+    </div>
+    {% if chatter.notes %}<div class="info-row"><span>Notes</span><span class="text-muted">{{ chatter.notes }}</span></div>{% endif %}
+    {% if user_row %}
+    <div class="info-row"><span>Compte</span>
+      <span>{{ user_row.username }} <span class="badge {% if user_row.active %}badge-active{% else %}badge-inactive{% endif %}">{% if user_row.active %}Actif{% else %}Inactif{% endif %}</span></span>
+    </div>
+    {% endif %}
+    <div class="card-actions">
+      <a href="{{ url_for('manager.chatter_edit', chatter_id=chatter.id) }}" class="btn btn-sm btn-ghost">Modifier infos</a>
+    </div>
+  </div>
+
+  <div class="grid-2-inner">
+    <div class="card card-sm"><div class="card-label">CA du jour</div><div class="card-value-sm">{{ "%.2f"|format(ca_today) }} €</div></div>
+    <div class="card card-sm"><div class="card-label">CA semaine</div><div class="card-value-sm">{{ "%.2f"|format(ca_week) }} €</div></div>
+    <div class="card card-sm"><div class="card-label">CA du mois</div><div class="card-value-sm">{{ "%.2f"|format(stats.ca) }} €</div></div>
+    <div class="card card-sm"><div class="card-label">Jours</div><div class="card-value-sm">{{ stats.days }}</div></div>
+    <div class="card card-sm"><div class="card-label">Moy./jour</div><div class="card-value-sm">{{ "%.2f"|format(stats.avg) }} €</div></div>
+    <div class="card card-sm card-accent"><div class="card-label">Rémunération</div><div class="card-value-sm">{{ "%.2f"|format(stats.final_salary) }} €</div></div>
+  </div>
+</div>
+
+<!-- Modifier shift -->
+<div class="card">
+  <div class="card-title">🕐 Modifier le shift permanent</div>
+  <form method="post" action="{{ url_for('manager.chatter_shift_update', chatter_id=chatter.id) }}" class="form-row">
+    <div class="form-group">
+      <label>Début</label>
+      <input type="time" name="shift_start" value="{{ chatter.shift_start|short if chatter.shift_start else '' }}" required />
+    </div>
+    <div class="form-group">
+      <label>Fin</label>
+      <input type="time" name="shift_end" value="{{ chatter.shift_end|short if chatter.shift_end else '' }}" required />
+    </div>
+    <div class="form-group form-group-submit">
+      <label>&nbsp;</label>
+      <button type="submit" class="btn btn-primary">Mettre à jour</button>
+    </div>
+  </form>
+
+  {% if shift_hist %}
+  <div class="card-title" style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px">Historique des changements</div>
+  <table class="table">
+    <thead><tr><th>Date</th><th>Ancien shift</th><th>Nouveau shift</th></tr></thead>
+    <tbody>
+    {% for h in shift_hist %}
+    <tr>
+      <td class="text-muted">{{ h.changed_at|short(16) }}</td>
+      <td>{% if h.old_start %}{{ h.old_start|short }} → {{ h.old_end|short }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+      <td>{{ h.new_start|short }} → {{ h.new_end|short }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+
+<!-- Rémunération détaillée -->
+<div class="card">
+  <div class="card-title">💵 Rémunération — {{ month_name }} {{ year }}</div>
+  <div class="rem-row"><span>Commission de base ({{ "%.2f"|format(stats.ca) }} × 8 %)</span><strong>{{ "%.2f"|format(stats.base_commission) }} €</strong></div>
+  <div class="rem-row positive"><span>+ Primes</span><strong>{{ "%.2f"|format(stats.total_bonuses) }} €</strong></div>
+  <div class="rem-row negative"><span>− Malus</span><strong>{{ "%.2f"|format(stats.total_penalties) }} €</strong></div>
+  <div class="rem-row rem-total"><span>= Net estimé</span><strong>{{ "%.2f"|format(stats.final_salary) }} €</strong></div>
+</div>
+
+<div class="grid-2">
+  <!-- Primes -->
+  <div class="card">
+    <div class="card-title">🎁 Primes — {{ month_name }}</div>
+    <form method="post" action="{{ url_for('manager.bonus_add') }}" class="inline-form">
+      <input type="hidden" name="chatter_id" value="{{ chatter.id }}" />
+      <input type="hidden" name="redirect" value="{{ url_for('manager.chatter_detail', chatter_id=chatter.id) }}" />
+      <div class="inline-form-row">
+        <input type="date" name="date" value="{{ today.isoformat() }}" required />
+        <input type="number" name="amount" min="0" step="0.01" placeholder="Montant €" required />
+        <input type="text" name="reason" placeholder="Motif" required />
+        <button type="submit" class="btn btn-sm btn-primary">+ Ajouter</button>
+      </div>
+    </form>
+    {% if bonuses %}
+    <table class="table mt-1">
+      <thead><tr><th>Date</th><th>Motif</th><th>Montant</th><th></th></tr></thead>
+      <tbody>
+      {% for b in bonuses %}
+      <tr>
+        <td>{{ b.date }}</td>
+        <td>{{ b.reason }}{% if b.comment %} <span class="text-muted">({{ b.comment }})</span>{% endif %}</td>
+        <td class="positive">+{{ "%.2f"|format(b.amount) }} €</td>
+        <td>
+          <form method="post" action="{{ url_for('manager.bonus_delete', bonus_id=b.id) }}">
+            <input type="hidden" name="redirect" value="{{ url_for('manager.chatter_detail', chatter_id=chatter.id) }}" />
+            <button class="btn btn-xs btn-danger" onclick="return confirm('Supprimer ?')">✕</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<p class="muted">Aucune prime ce mois-ci.</p>{% endif %}
+  </div>
+
+  <!-- Malus -->
+  <div class="card">
+    <div class="card-title">⚠️ Malus — {{ month_name }}</div>
+    <form method="post" action="{{ url_for('manager.penalty_add') }}" class="inline-form">
+      <input type="hidden" name="chatter_id" value="{{ chatter.id }}" />
+      <input type="hidden" name="redirect" value="{{ url_for('manager.chatter_detail', chatter_id=chatter.id) }}" />
+      <div class="inline-form-row">
+        <input type="date" name="date" value="{{ today.isoformat() }}" required />
+        <input type="number" name="amount" min="0" step="0.01" placeholder="Montant €" required />
+        <input type="text" name="reason" placeholder="Motif" required />
+        <button type="submit" class="btn btn-sm btn-danger">+ Ajouter</button>
+      </div>
+    </form>
+    {% if penalties %}
+    <table class="table mt-1">
+      <thead><tr><th>Date</th><th>Motif</th><th>Montant</th><th></th></tr></thead>
+      <tbody>
+      {% for p in penalties %}
+      <tr>
+        <td>{{ p.date }}</td>
+        <td>{{ p.reason }}</td>
+        <td class="negative">−{{ "%.2f"|format(p.amount) }} €</td>
+        <td>
+          <form method="post" action="{{ url_for('manager.penalty_delete', penalty_id=p.id) }}">
+            <input type="hidden" name="redirect" value="{{ url_for('manager.chatter_detail', chatter_id=chatter.id) }}" />
+            <button class="btn btn-xs btn-danger" onclick="return confirm('Supprimer ?')">✕</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<p class="muted">Aucun malus ce mois-ci.</p>{% endif %}
+  </div>
+</div>
+
+<!-- Modèles attribués -->
+<div class="card">
+  <div class="card-title">👩 Modèles attribués</div>
+
+  <!-- Attribuer un modèle -->
+  {% if available_models %}
+  <form method="post"
+        action="{{ url_for('manager.chatter_assign_model', chatter_id=chatter.id) }}"
+        class="form-row" style="margin-bottom:var(--sp-4)">
+    <div class="form-group" style="flex:1">
+      <label>Ajouter un modèle</label>
+      <select name="model_id" required>
+        <option value="">— Sélectionner —</option>
+        {% for m in available_models %}
+        <option value="{{ m.id }}">{{ m.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group form-group-submit">
+      <label>&nbsp;</label>
+      <button type="submit" class="btn btn-primary">Attribuer</button>
+    </div>
+  </form>
+  {% endif %}
+
+  {% if assigned_models %}
+  <div class="model-tags">
+    {% for m in assigned_models %}
+    <div class="model-tag">
+      <span class="model-tag-name">{{ m.name }}</span>
+      <span class="badge badge-{{ m.status }}" style="margin-left:4px">{{ m.status }}</span>
+      <form method="post"
+            action="{{ url_for('manager.chatter_remove_model', chatter_id=chatter.id, model_id=m.id) }}"
+            style="display:inline;margin-left:6px"
+            onsubmit="return confirm('Retirer « {{ m.name }} » ?')">
+        <button class="btn btn-xs btn-danger">✕</button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted">Aucun modèle attribué à ce chatter.</p>
+  {% endif %}
+
+  {% if not available_models and not assigned_models %}
+  <p class="muted small mt-1">
+    <a href="{{ url_for('manager.model_add') }}">Créer des modèles →</a>
+  </p>
+  {% endif %}
+</div>
+
+<!-- Historique CA -->
+<div class="card">
+  <div class="card-title">📊 30 derniers CA</div>
+  {% if recent_sales %}
+  <table class="table"><thead><tr><th>Date</th><th>CA (€)</th></tr></thead><tbody>
+  {% for s in recent_sales %}<tr><td>{{ s.date }}</td><td>{{ "%.2f"|format(s.amount) }} €</td></tr>{% endfor %}
+  </tbody></table>
+  {% else %}<p class="muted">Aucun CA enregistré.</p>{% endif %}
+</div>
+
+{% endblock %}

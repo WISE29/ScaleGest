@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Chatter Manager{% endblock %}
+{% block page_title %}Dashboard — {{ month_name }} {{ year }}{% endblock %}
+{% block content %}
+
+<div class="grid-4">
+  <div class="card card-accent card-kpi">
+    <div class="card-label">CA Équipe du mois</div>
+    <div class="card-value">{{ "%.2f"|format(ca_total) }} €</div>
+    <div class="card-sub">Chatters : {{ "%.2f"|format(ca_chatters) }} € · Manager : {{ "%.2f"|format(ca_manager) }} €</div>
+  </div>
+  <div class="card card-kpi">
+    <div class="card-label">CA du jour</div>
+    <div class="card-value">{{ "%.2f"|format(ca_today) }} €</div>
+    <div class="card-sub {% if ca_evolution >= 0 %}positive{% else %}negative{% endif %}">
+      {% if ca_evolution >= 0 %}▲{% else %}▼{% endif %} {{ "%.2f"|format(ca_evolution|abs) }} € vs hier
+    </div>
+  </div>
+  {% if obj_stats %}
+  <div class="card card-kpi">
+    <div class="card-label">Objectif {{ month_name }}</div>
+    <div class="card-value">{{ "%.2f"|format(obj_stats.objective) }} €</div>
+    <div class="card-sub">{{ "%.1f"|format(obj_stats.progression) }} % atteint</div>
+    <div class="progress-bar-wrap"><div class="progress-bar" style="width:{{ [obj_stats.progression,100]|min }}%"></div></div>
+  </div>
+  {% else %}
+  <div class="card card-muted card-kpi">
+    <div class="card-label">Objectif {{ month_name }}</div>
+    <div class="card-value">—</div>
+    <div class="card-sub"><a href="{{ url_for('manager.objectives') }}">Définir →</a></div>
+  </div>
+  {% endif %}
+  <div class="card card-kpi">
+    <div class="card-label">Chatters actifs</div>
+    <div class="card-value">{{ active_count }}</div>
+    <div class="card-sub"><a href="{{ url_for('manager.chatters_list') }}">Voir l'équipe →</a></div>
+  </div>
+</div>
+
+{% if obj_stats %}
+<div class="grid-3">
+  <div class="card card-kpi"><div class="card-label">CA restant</div><div class="card-value text-warning">{{ "%.2f"|format(obj_stats.ca_remaining) }} €</div><div class="card-sub">{{ obj_stats.days_remaining }} jours restants</div></div>
+  <div class="card card-kpi"><div class="card-label">Moyenne quotidienne</div><div class="card-value">{{ "%.2f"|format(obj_stats.daily_avg) }} €/j</div><div class="card-sub">{{ obj_stats.days_elapsed }} jours écoulés</div></div>
+  <div class="card card-kpi">
+    <div class="card-label">Projection</div>
+    <div class="card-value {% if obj_stats.projection >= obj_stats.objective %}text-success{% else %}text-warning{% endif %}">{{ "%.2f"|format(obj_stats.projection) }} €</div>
+    <div class="card-sub">Besoin : {{ "%.2f"|format(obj_stats.needed_per_day) }} €/j</div>
+  </div>
+</div>
+{% endif %}
+
+<div class="grid-2">
+  <div class="card"><div class="card-title">📈 CA quotidien — {{ month_name }} {{ year }}</div><canvas id="dailyChart" height="200"></canvas></div>
+  <div class="card"><div class="card-title">🍩 Répartition chatters</div><canvas id="breakdownChart" height="200"></canvas></div>
+</div>
+
+<div class="grid-2">
+  <!-- Top 5 -->
+  <div class="card">
+    <div class="card-title">🏆 Top 5 du mois</div>
+    {% if top5 %}
+    <table class="table">
+      <thead><tr><th>#</th><th>Chatter</th><th>CA</th><th>Moy./j</th></tr></thead>
+      <tbody>
+      {% for entry in top5 %}
+      <tr>
+        <td><span class="rank rank-{{ loop.index }}">{{ loop.index }}</span></td>
+        <td><a href="{{ url_for('manager.chatter_detail', chatter_id=entry.chatter.id) }}">{{ entry.chatter.name }}</a></td>
+        <td>{{ "%.2f"|format(entry.ca) }} €</td>
+        <td>{{ "%.2f"|format(entry.avg) }} €</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<p class="muted">Aucune donnée.</p>{% endif %}
+    <div class="card-actions"><a href="{{ url_for('manager.ranking') }}" class="btn btn-ghost">Classement complet →</a></div>
+  </div>
+
+  <!-- Shifts + Rémunération -->
+  <div class="grid-1">
+    <div class="card">
+      <div class="card-title">🕐 Organisation des shifts</div>
+      {% if shifts_view.groups %}
+        {% for slot, members in shifts_view.groups.items() %}
+        <div class="shift-slot">
+          <div class="shift-slot-label">{{ slot }}</div>
+          <div class="shift-slot-members">
+            {% for m in members %}<span class="shift-chip">{{ m.name }}</span>{% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}<p class="muted">Aucun shift défini.</p>{% endif %}
+      {% if shifts_view.no_shift %}
+      <div class="shift-slot">
+        <div class="shift-slot-label text-muted">Sans shift</div>
+        <div class="shift-slot-members">
+          {% for m in shifts_view.no_shift %}<span class="shift-chip chip-next">{{ m.name }}</span>{% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+    <div class="card">
+      <div class="card-title">💵 Rémunérations estimées</div>
+      <div class="rem-row"><span>Masse salariale chatters</span><strong>{{ "%.2f"|format(payroll_mass) }} €</strong></div>
+      <div class="rem-row"><span>Commission équipe manager (2 %)</span><strong>{{ "%.2f"|format(mgr_rem.commission_team) }} €</strong></div>
+      <div class="rem-row"><span>Commission personnelle (5 %)</span><strong>{{ "%.2f"|format(mgr_rem.commission_personal) }} €</strong></div>
+      <div class="rem-row rem-total"><span>Total manager</span><strong>{{ "%.2f"|format(mgr_rem.total) }} €</strong></div>
+    </div>
+  </div>
+</div>
+
+<div class="quick-actions">
+  <a href="{{ url_for('manager.sales') }}" class="btn btn-primary">💰 Saisir le CA</a>
+  <a href="{{ url_for('manager.chatters_list') }}" class="btn btn-secondary">👥 Chatters</a>
+  <a href="{{ url_for('manager.shifts') }}" class="btn btn-secondary">🕐 Shifts</a>
+  <a href="{{ url_for('manager.payroll_list') }}" class="btn btn-secondary">🧾 Paies</a>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+const MONTH = {{ month }}, YEAR = {{ year }};
+fetch(`/manager/api/daily_ca/${YEAR}/${MONTH}`).then(r=>r.json()).then(data=>{
+  if (!data.dates.length) return;
+  const c = chartColors();
+  const chart = new Chart(document.getElementById('dailyChart').getContext('2d'),{
+    type:'line',
+    data:{labels:data.dates,datasets:[
+      {label:'CA Chatters',data:data.ca_chatters,borderColor:c.line1,backgroundColor:c.line1bg,fill:true,tension:0.4,pointRadius:3,borderWidth:2},
+      {label:'CA Total',data:data.ca_total,borderColor:c.line2,backgroundColor:c.line2bg,fill:false,tension:0.4,pointRadius:3,borderWidth:2,borderDash:[5,4]}
+    ]},
+    options:{responsive:true,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{position:'top',labels:{color:c.text,boxWidth:12,usePointStyle:true}}},
+      scales:{x:{grid:{color:c.grid},ticks:{color:c.text,maxRotation:45}},
+              y:{beginAtZero:true,grid:{color:c.grid},ticks:{color:c.text,callback:v=>v.toLocaleString('fr-FR')+'€'}}}}
+  });
+  registerChart(chart,'line');
+});
+fetch(`/manager/api/chatter_breakdown/${YEAR}/${MONTH}`).then(r=>r.json()).then(data=>{
+  if (!data.labels.length) return;
+  const c = chartColors();
+  const chart = new Chart(document.getElementById('breakdownChart').getContext('2d'),{
+    type:'doughnut',
+    data:{labels:data.labels,datasets:[{data:data.values,backgroundColor:c.donut,borderWidth:2,hoverOffset:6}]},
+    options:{responsive:true,cutout:'62%',plugins:{
+      legend:{position:'right',labels:{color:c.text,boxWidth:12,usePointStyle:true,padding:14}},
+      tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.parsed.toLocaleString('fr-FR',{minimumFractionDigits:2})} €`}}
+    }}
+  });
+  registerChart(chart,'doughnut');
+});
+</script>
+{% endblock %}

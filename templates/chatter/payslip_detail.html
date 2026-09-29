@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Fiche de paie {{ month_name }} {{ year }}{% endblock %}
+{% block page_title %}🧾 Fiche de paie — {{ month_name }} {{ year }}{% endblock %}
+{% block content %}
+
+<div class="card" style="max-width:600px;margin:0 auto">
+  <div class="payslip-header">
+    <div class="payslip-title">FICHE DE PAIE</div>
+    <div class="payslip-subtitle">{{ month_name }} {{ year }}</div>
+    <div class="payslip-name">{{ chatter.name }}</div>
+  </div>
+
+  <div class="rem-row">
+    <span>CA net total</span>
+    <strong>{{ "%.2f"|format(data.ca_net) }} €</strong>
+  </div>
+  <div class="rem-row">
+    <span>Taux de commission</span>
+    <strong>8 %</strong>
+  </div>
+  <div class="rem-row">
+    <span>Commission de base</span>
+    <strong>{{ "%.2f"|format(data.base_commission) }} €</strong>
+  </div>
+  <div class="rem-row positive">
+    <span>+ Total primes</span>
+    <strong>{{ "%.2f"|format(data.total_bonuses) }} €</strong>
+  </div>
+  <div class="rem-row negative">
+    <span>− Total malus</span>
+    <strong>{{ "%.2f"|format(data.total_penalties) }} €</strong>
+  </div>
+
+  <div style="border-top:2px solid var(--border-strong);margin-top:12px;padding-top:16px;display:flex;justify-content:space-between;align-items:center">
+    <span style="font-size:var(--fs-lg);font-weight:var(--fw-bold);color:var(--text-1)">Net à payer</span>
+    <span style="font-size:var(--fs-2xl);font-weight:var(--fw-bold);color:var(--accent)">
+      {{ "%.2f"|format(data.final_amount) }} €
+    </span>
+  </div>
+
+  <div class="card-actions" style="margin-top:20px;justify-content:center">
+    <a href="{{ url_for('chatter_space.my_payslips') }}" class="btn btn-ghost">← Retour</a>
+  </div>
+</div>
+
+{% endblock %}

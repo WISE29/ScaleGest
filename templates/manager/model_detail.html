@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}{{ model.name }}{% endblock %}
+{% block page_title %}👩 {{ model.name }}{% endblock %}
+{% block content %}
+
+<div class="grid-2">
+  <!-- Infos modèle -->
+  <div class="card">
+    <div class="card-title">Informations</div>
+    <div class="info-row">
+      <span>Statut</span>
+      <span class="badge badge-{{ model.status }}">{{ model.status }}</span>
+    </div>
+    {% if model.notes %}
+    <div class="info-row">
+      <span>Notes</span>
+      <span class="text-muted">{{ model.notes }}</span>
+    </div>
+    {% endif %}
+    <div class="info-row">
+      <span>Chatters associés</span>
+      <strong>{{ chatters|length }}</strong>
+    </div>
+    <div class="card-actions">
+      <a href="{{ url_for('manager.model_edit', model_id=model.id) }}" class="btn btn-sm btn-ghost">Modifier</a>
+      <form method="post" action="{{ url_for('manager.model_toggle', model_id=model.id) }}" style="display:inline">
+        <button class="btn btn-sm btn-warning"
+                onclick="return confirm('Changer le statut de « {{ model.name }} » ?')">
+          {% if model.status == 'active' %}Désactiver{% else %}Réactiver{% endif %}
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Assigner un chatter -->
+  <div class="card">
+    <div class="card-title">Associer un chatter</div>
+    {% if available %}
+    <form method="post" action="{{ url_for('manager.model_assign_chatter', model_id=model.id) }}"
+          class="form-row">
+      <div class="form-group" style="flex:1">
+        <label>Chatter</label>
+        <select name="chatter_id" required>
+          <option value="">— Sélectionner —</option>
+          {% for c in available %}
+          <option value="{{ c.id }}">{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group form-group-submit">
+        <label>&nbsp;</label>
+        <button type="submit" class="btn btn-primary">Associer</button>
+      </div>
+    </form>
+    {% else %}
+    <p class="muted">Tous les chatters actifs sont déjà associés à ce modèle.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Liste des chatters associés -->
+<div class="card">
+  <div class="card-title">👥 Chatters associés ({{ chatters|length }})</div>
+  {% if chatters %}
+  <div class="roster-list">
+    {% for c in chatters %}
+    <div class="roster-item">
+      <div class="roster-avatar">{{ c.name[0]|upper }}</div>
+      <div class="roster-info">
+        <div class="roster-name">{{ c.name }}</div>
+        <div class="roster-shift">
+          {% if c.shift_start and c.shift_end %}
+            Shift : {{ c.shift_start|short }} → {{ c.shift_end|short }}
+          {% else %}
+            Pas de shift défini
+          {% endif %}
+          &nbsp;·&nbsp; Associé le {{ c.assigned_at|short(10) }}
+        </div>
+      </div>
+      <div class="roster-actions">
+        <a href="{{ url_for('manager.chatter_detail', chatter_id=c.id) }}"
+           class="btn btn-xs btn-ghost">Voir fiche</a>
+        <form method="post"
+              action="{{ url_for('manager.model_remove_chatter', model_id=model.id, chatter_id=c.id) }}"
+              style="display:inline"
+              onsubmit="return confirm('Retirer {{ c.name }} de ce modèle ?')">
+          <button class="btn btn-xs btn-danger">Retirer</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted">Aucun chatter associé à ce modèle.</p>
+  {% endif %}
+</div>
+
+<div class="mt-1">
+  <a href="{{ url_for('manager.models_list') }}" class="btn btn-ghost">← Retour aux modèles</a>
+</div>
+
+{% endblock %}

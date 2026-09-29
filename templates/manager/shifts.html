@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Shifts{% endblock %}
+{% block page_title %}🕐 Organisation des shifts{% endblock %}
+{% block content %}
+
+<div class="section-header">
+  <p class="muted">Les shifts sont permanents et rattachés à chaque chatter. Modifiez-les depuis la fiche individuelle.</p>
+  <a href="{{ url_for('manager.chatter_add') }}" class="btn btn-primary">+ Nouveau chatter</a>
+</div>
+
+{% if view.groups %}
+  {% for slot, members in view.groups.items() %}
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title">🕐 {{ slot }}</div>
+    <div class="shifts-roster">
+      {% for m in members %}
+      <div class="roster-item">
+        <div class="roster-avatar">{{ m.name[0]|upper }}</div>
+        <div class="roster-info">
+          <div class="roster-name">{{ m.name }}</div>
+          <div class="roster-shift">{{ slot }}</div>
+        </div>
+        <div class="roster-actions">
+          <a href="{{ url_for('manager.chatter_detail', chatter_id=m.id) }}" class="btn btn-xs btn-ghost">Modifier</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+<div class="card"><p class="muted">Aucun shift assigné. Ajoutez des chatters et définissez leurs shifts depuis leur fiche.</p></div>
+{% endif %}
+
+{% if view.no_shift %}
+<div class="card">
+  <div class="card-title text-muted">Sans shift assigné</div>
+  <div class="shifts-roster">
+  {% for m in view.no_shift %}
+  <div class="roster-item">
+    <div class="roster-avatar" style="background:var(--surface-3);color:var(--text-3)">{{ m.name[0]|upper }}</div>
+    <div class="roster-info">
+      <div class="roster-name">{{ m.name }}</div>
+      <div class="roster-shift text-muted">Non défini</div>
+    </div>
+    <div class="roster-actions">
+      <a href="{{ url_for('manager.chatter_detail', chatter_id=m.id) }}" class="btn btn-xs btn-primary">Assigner</a>
+    </div>
+  </div>
+  {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

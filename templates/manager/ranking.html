@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Classement{% endblock %}
+{% block page_title %}🏆 Classement — {{ month_name }} {{ year }}{% endblock %}
+{% block content %}
+<div class="filters-bar">
+  <form method="get" class="filters-form">
+    <select name="month" onchange="this.form.submit()">
+      {% for m in available_months %}
+      <option value="{{ m.month }}" data-year="{{ m.year }}" {% if m.month==month and m.year==year %}selected{% endif %}>
+        {{ months_fr[m.month] }} {{ m.year }}
+      </option>
+      {% endfor %}
+    </select>
+    <input type="hidden" name="year" id="year-in" value="{{ year }}" />
+    <select name="sort" onchange="this.form.submit()">
+      <option value="ca"   {% if sort=='ca' %}selected{% endif %}>Par CA</option>
+      <option value="avg"  {% if sort=='avg' %}selected{% endif %}>Par moyenne</option>
+      <option value="days" {% if sort=='days' %}selected{% endif %}>Par jours</option>
+    </select>
+  </form>
+  <a href="{{ url_for('manager.export_csv', year=year, month=month) }}" class="btn btn-ghost">⬇ CSV</a>
+</div>
+
+{% if data %}
+<div class="card">
+  <table class="table ranking-table">
+    <thead><tr><th>#</th><th>Chatter</th><th>CA</th><th>Jours</th><th>Moy./j</th><th>Commission</th><th>Primes</th><th>Malus</th><th>Rémunération</th></tr></thead>
+    <tbody>
+    {% for entry in data %}
+    <tr class="{% if loop.index==1 %}rank-gold{% elif loop.index==2 %}rank-silver{% elif loop.index==3 %}rank-bronze{% endif %}">
+      <td><span class="rank rank-{{ loop.index }}">{{ loop.index }}</span></td>
+      <td><a href="{{ url_for('manager.chatter_detail', chatter_id=entry.chatter.id) }}">{{ entry.chatter.name }}</a></td>
+      <td><strong>{{ "%.2f"|format(entry.ca) }} €</strong></td>
+      <td>{{ entry.days }}</td>
+      <td>{{ "%.2f"|format(entry.avg) }} €</td>
+      <td>{{ "%.2f"|format(entry.base_commission) }} €</td>
+      <td class="positive">+{{ "%.2f"|format(entry.total_bonuses) }} €</td>
+      <td class="negative">−{{ "%.2f"|format(entry.total_penalties) }} €</td>
+      <td><strong class="text-accent">{{ "%.2f"|format(entry.final_salary) }} €</strong></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="2"><strong>TOTAL</strong></td>
+        <td><strong>{{ "%.2f"|format(data|sum(attribute='ca')) }} €</strong></td>
+        <td></td><td></td>
+        <td><strong>{{ "%.2f"|format(data|sum(attribute='base_commission')) }} €</strong></td>
+        <td class="positive"><strong>+{{ "%.2f"|format(data|sum(attribute='total_bonuses')) }} €</strong></td>
+        <td class="negative"><strong>−{{ "%.2f"|format(data|sum(attribute='total_penalties')) }} €</strong></td>
+        <td><strong class="text-accent">{{ "%.2f"|format(data|sum(attribute='final_salary')) }} €</strong></td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+{% else %}
+<div class="card"><p class="muted">Aucune donnée pour {{ month_name }} {{ year }}.</p></div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script>
+document.querySelector('select[name="month"]')?.addEventListener('change', function(){
+  var opt = this.options[this.selectedIndex];
+  if (opt && opt.dataset.year) document.getElementById('year-in').value = opt.dataset.year;
+});
+</script>
+{% endblock %}

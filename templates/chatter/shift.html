@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Mon Shift{% endblock %}
+{% block page_title %}🕐 Mon Shift — {{ chatter.name }}{% endblock %}
+{% block content %}
+
+<div class="grid-2">
+  <!-- Shift actuel -->
+  <div class="card card-accent">
+    <div class="card-title">Shift permanent actuel</div>
+    {% if shift_start and shift_end %}
+    <div class="shift-display">
+      <div class="shift-display-time">{{ shift_start }}</div>
+      <div class="shift-display-arrow">→</div>
+      <div class="shift-display-time">{{ shift_end }}</div>
+    </div>
+    <p class="muted" style="margin-top:12px">
+      Ce shift est permanent et ne change que sur décision du manager.
+    </p>
+    {% else %}
+    <p class="muted">Aucun shift assigné pour le moment. Contactez votre manager.</p>
+    {% endif %}
+  </div>
+
+  <!-- Info -->
+  <div class="card">
+    <div class="card-title">À propos des shifts</div>
+    <p style="font-size:var(--fs-base);color:var(--text-2);line-height:1.7">
+      Votre shift est fixe et récurrent. Il représente votre créneau habituel de travail.
+      Seul le manager peut modifier votre shift.
+    </p>
+    {% if history %}
+    <div style="margin-top:16px;font-size:var(--fs-sm);color:var(--text-3)">
+      Dernier changement : {{ history[0].changed_at|short(10) }}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Historique des changements -->
+{% if history %}
+<div class="card">
+  <div class="card-title">Historique des changements</div>
+  <table class="table">
+    <thead>
+      <tr><th>Date</th><th>Ancien shift</th><th>Nouveau shift</th></tr>
+    </thead>
+    <tbody>
+    {% for h in history %}
+    <tr>
+      <td class="text-muted">{{ h.changed_at|short(10) }}</td>
+      <td>
+        {% if h.old_start and h.old_end %}
+          {{ h.old_start|short }} → {{ h.old_end|short }}
+        {% else %}
+          <span class="text-muted">—</span>
+        {% endif %}
+      </td>
+      <td><strong>{{ h.new_start|short }} → {{ h.new_end|short }}</strong></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% endblock %}

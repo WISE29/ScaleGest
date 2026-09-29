@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Mon CA{% endblock %}
+{% block page_title %}📊 Mon CA — {{ chatter.name }}{% endblock %}
+{% block content %}
+
+<!-- Sélecteur de mois -->
+<div class="filters-bar">
+  <form method="get" class="filters-form">
+    <select name="month" onchange="this.form.submit()">
+      {% for m in available_months %}
+      <option value="{{ m.month }}" data-year="{{ m.year }}"
+        {% if m.month == month and m.year == year %}selected{% endif %}>
+        {{ months_fr[m.month] }} {{ m.year }}
+      </option>
+      {% endfor %}
+    </select>
+    <input type="hidden" name="year" id="year-in" value="{{ year }}" />
+  </form>
+</div>
+
+<!-- Stats du mois -->
+<div class="grid-4">
+  <div class="card card-accent card-kpi">
+    <div class="card-label">CA du mois</div>
+    <div class="card-value">{{ "%.2f"|format(stats.ca) }} €</div>
+  </div>
+  <div class="card card-kpi">
+    <div class="card-label">Jours travaillés</div>
+    <div class="card-value">{{ stats.days }}</div>
+  </div>
+  <div class="card card-kpi">
+    <div class="card-label">Moyenne / jour</div>
+    <div class="card-value">{{ "%.2f"|format(stats.avg) }} €</div>
+  </div>
+  <div class="card card-kpi">
+    <div class="card-label">Commission de base</div>
+    <div class="card-value text-accent">{{ "%.2f"|format(stats.base_commission) }} €</div>
+    <div class="card-sub">8 % du CA</div>
+  </div>
+</div>
+
+<!-- Historique -->
+<div class="card">
+  <div class="card-title">Historique des CA enregistrés</div>
+  {% if recent_sales %}
+  <table class="table">
+    <thead><tr><th>Date</th><th>CA (€)</th></tr></thead>
+    <tbody>
+    {% for s in recent_sales %}
+    <tr>
+      <td>{{ s.date }}</td>
+      <td><strong>{{ "%.2f"|format(s.amount) }} €</strong></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">Aucun CA enregistré pour {{ month_name }} {{ year }}.</p>
+  {% endif %}
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+document.querySelector('select[name="month"]')?.addEventListener('change', function () {
+  var opt = this.options[this.selectedIndex];
+  if (opt && opt.dataset.year) document.getElementById('year-in').value = opt.dataset.year;
+});
+</script>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Paies{% endblock %}
+{% block page_title %}🧾 Gestion des paies{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-title">Sélectionner un mois</div>
+  {% if available_months %}
+  <div class="months-list">
+    {% for m in available_months %}
+    <a href="{{ url_for('manager.payroll_detail', year=m.year, month=m.month) }}"
+       class="month-pill {% if m.month==today.month and m.year==today.year %}month-pill-current{% endif %}">
+      {{ months_fr[m.month] }} {{ m.year }}
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted">Aucune donnée disponible. Commencez par saisir des CA.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Chatters{% endblock %}
+{% block page_title %}👥 Équipe{% endblock %}
+{% block content %}
+<div class="section-header">
+  <div></div>
+  <a href="{{ url_for('manager.chatter_add') }}" class="btn btn-primary">+ Ajouter un chatter</a>
+</div>
+
+<h3 class="section-title">Actifs</h3>
+<div class="grid-cards">
+{% for c in chatters if c.status == 'active' %}
+{% set s = stats[c.id] %}
+<div class="chatter-card">
+  <div class="chatter-card-header">
+    <div class="chatter-avatar">{{ c.name[0]|upper }}</div>
+    <div class="chatter-info">
+      <div class="chatter-name">{{ c.name }}</div>
+      <div class="chatter-meta">
+        Depuis {{ c.date_joined }}
+        {% if c.shift_start and c.shift_end %}
+        · <span class="shift-badge">{{ c.shift_start|short }} → {{ c.shift_end|short }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <span class="badge badge-active">Actif</span>
+  </div>
+  <div class="chatter-stats">
+    <div class="stat-row"><span>CA du mois</span><strong>{{ "%.2f"|format(s.ca) }} €</strong></div>
+    <div class="stat-row"><span>Jours travaillés</span><strong>{{ s.days }}</strong></div>
+    <div class="stat-row"><span>Moy./jour</span><strong>{{ "%.2f"|format(s.avg) }} €</strong></div>
+    <div class="stat-row"><span>Rémunération</span><strong class="text-accent">{{ "%.2f"|format(s.final_salary) }} €</strong></div>
+  </div>
+  <div class="chatter-card-actions">
+    <a href="{{ url_for('manager.chatter_detail', chatter_id=c.id) }}" class="btn btn-sm btn-primary">Voir</a>
+    <a href="{{ url_for('manager.chatter_edit', chatter_id=c.id) }}" class="btn btn-sm btn-ghost">Modifier</a>
+    <form method="post" action="{{ url_for('manager.chatter_toggle', chatter_id=c.id) }}" style="display:inline">
+      <button class="btn btn-sm btn-warning">Désactiver</button>
+    </form>
+  </div>
+</div>
+{% else %}
+<p class="muted">Aucun chatter actif.</p>
+{% endfor %}
+</div>
+
+{% set inactive = chatters|selectattr('status','eq','inactive')|list %}
+{% if inactive %}
+<h3 class="section-title mt-2">Inactifs</h3>
+<div class="grid-cards">
+{% for c in inactive %}
+<div class="chatter-card chatter-card-inactive">
+  <div class="chatter-card-header">
+    <div class="chatter-avatar">{{ c.name[0]|upper }}</div>
+    <div class="chatter-info"><div class="chatter-name">{{ c.name }}</div></div>
+    <span class="badge badge-inactive">Inactif</span>
+  </div>
+  <div class="chatter-card-actions">
+    <a href="{{ url_for('manager.chatter_detail', chatter_id=c.id) }}" class="btn btn-sm btn-ghost">Voir</a>
+    <form method="post" action="{{ url_for('manager.chatter_toggle', chatter_id=c.id) }}" style="display:inline">
+      <button class="btn btn-sm btn-secondary">Réactiver</button>
+    </form>
+    <form method="post" action="{{ url_for('manager.chatter_delete', chatter_id=c.id) }}" style="display:inline"
+          onsubmit="return confirm('Supprimer définitivement {{ c.name }} ?')">
+      <button class="btn btn-sm btn-danger">Supprimer</button>
+    </form>
+  </div>
+</div>
+{% endfor %}
+</div>
+{% endif %}
+{% endblock %}
