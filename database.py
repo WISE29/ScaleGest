@@ -174,7 +174,11 @@ def init_db(app):
         conn = psycopg2.connect(url)
         conn.autocommit = True
         with conn.cursor() as cur:
-            cur.execute(schema)
+            try:
+                cur.execute(schema)
+            except psycopg2.Error as e:
+                import sys
+                print(f"[init_db] Avertissement SQL : {e}", file=sys.stderr)
         conn.close()
 
     _ensure_manager(app)

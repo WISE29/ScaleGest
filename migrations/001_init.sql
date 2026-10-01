@@ -28,11 +28,19 @@ CREATE TABLE IF NOT EXISTS chatters (
 );
 
 -- FK différée pour éviter la dépendance circulaire users ↔ chatters
-ALTER TABLE users
-    ADD CONSTRAINT fk_users_chatter
-    FOREIGN KEY (chatter_id) REFERENCES chatters(id)
-    ON DELETE SET NULL
-    DEFERRABLE INITIALLY DEFERRED;
+-- DO block : ignore si la contrainte existe déjà (redéploiements successifs)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'fk_users_chatter'
+    ) THEN
+        ALTER TABLE users
+            ADD CONSTRAINT fk_users_chatter
+            FOREIGN KEY (chatter_id) REFERENCES chatters(id)
+            ON DELETE SET NULL
+            DEFERRABLE INITIALLY DEFERRED;
+    END IF;
+END $$;
 
 -- ── Historique des changements de shift ──────────────────────────
 CREATE TABLE IF NOT EXISTS shifts_history (
