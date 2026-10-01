@@ -95,16 +95,59 @@ class _SQLiteCursor:
 
 # ─── Connexion PostgreSQL ──────────────────────────────────────────────────────
 
+class _PGConn:
+    """Wrapper psycopg2 qui expose la même interface que _SQLiteConn."""
+
+    def __init__(self, raw_conn):
+        self._conn = raw_conn
+
+    def execute(self, sql: str, params=()):
+        import psycopg2.extras
+        cur = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(sql, params)
+        return _PGCursor(cur)
+
+    def commit(self):
+        self._conn.commit()
+
+    def rollback(self):
+        self._conn.rollback()
+
+    def close(self):
+        self._conn.close()
+
+
+class _PGCursor:
+    def __init__(self, cur):
+        self._cur = cur
+
+    def fetchone(self):
+        row = self._cur.fetchone()
+        return dict(row) if row is not None else None
+
+    def fetchall(self):
+        rows = self._cur.fetchall()
+        return [dict(r) for r in rows] if rows else []
+
+    @property
+    def rowcount(self):
+        return self._cur.rowcount
+
+    @property
+    def lastrowid(self):
+        # PostgreSQL : utiliser RETURNING id dans le SQL
+        # lastrowid n'est pas supporté nativement — retourne None
+        return None
+
+
 def _pg_connect():
     import psycopg2
-    import psycopg2.extras
     url = DATABASE_URL
-    # Render/Heroku fournissent postgres:// — psycopg2 veut postgresql://
     if url.startswith("postgres://"):
         url = "postgresql://" + url[len("postgres://"):]
-    conn = psycopg2.connect(url, cursor_factory=psycopg2.extras.RealDictCursor)
-    conn.autocommit = False
-    return conn
+    raw = psycopg2.connect(url)
+    raw.autocommit = False
+    return _PGConn(raw)
 
 
 # ─── Interface publique ────────────────────────────────────────────────────────
@@ -314,18 +357,51 @@ def _apply_sqlite_schema(conn):
 
 
 def _ensure_manager(app):
-    """Crée le compte manager initial s'il n'existe pas."""
+    """
+    Crée le compte manager initial s'il n'existe pas.
+    Utilise une connexion directe (pas flask.g) car appelé hors requête.
+    """
     from werkzeug.security import generate_password_hash
     username = os.environ.get("INIT_MANAGER_USERNAME", "manager")
     password = os.environ.get("INIT_MANAGER_PASSWORD", "manager123")
+    pwd_hash = generate_password_hash(password)
 
-    with app.app_context():
-        existing = run_sql(
-            "SELECT id FROM users WHERE username = %s", (username,), fetch="one"
-        )
-        if not existing:
-            run_sql(
-                "INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s)",
-                (username, generate_password_hash(password), "manager")
+    if _USE_SQLITE:
+        # SQLite : connexion directe via notre wrapper
+        conn = _SQLiteConn(_sqlite_path())
+        row = conn.execute(
+            "SELECT id FROM users WHERE username = ?", (username,)
+        ).fetchone()
+        if not row:
+            conn.execute(
+                "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+                (username, pwd_hash, "manager")
             )
-            commit()
+            conn.commit()
+        conn.close()
+    else:
+        # PostgreSQL : connexion directe psycopg2 avec curseur explicite
+        import psycopg2
+        url = DATABASE_URL
+        if url.startswith("postgres://"):
+            url = "postgresql://" + url[len("postgres://"):]
+        conn = psycopg2.connect(url)
+        conn.autocommit = False
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT id FROM users WHERE username = %s", (username,)
+                )
+                existing = cur.fetchone()
+                if not existing:
+                    cur.execute(
+                        "INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s)",
+                        (username, pwd_hash, "manager")
+                    )
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            import sys
+            print(f"[_ensure_manager] Erreur : {e}", file=sys.stderr)
+        finally:
+            conn.close()
