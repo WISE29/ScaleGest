@@ -108,6 +108,6 @@ def generate_payslip_pdf(payroll_data: dict, chatter_name: str, output_dir: str)
     )
     elements.append(HRFlowable(width="100%", thickness=0.5, color=colors.grey))
     elements.append(Spacer(1, 0.2*cm))
-    elements.append(Paragraph("Document généré automatiquement — Chatter Manager V2", footer_style))
+    elements.append(Paragraph("Document généré automatiquement — Scale Gest V2", footer_style))
     doc.build(elements)
     return filepath
