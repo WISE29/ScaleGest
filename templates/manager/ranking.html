@@ -23,6 +23,7 @@
 
 {% if data %}
 <div class="card">
+  <div class="table-wrap">
   <table class="table ranking-table">
     <thead><tr><th>#</th><th>Chatter</th><th>CA</th><th>Jours</th><th>Moy./j</th><th>Commission</th><th>Primes</th><th>Malus</th><th>Rémunération</th></tr></thead>
     <tbody>
@@ -52,6 +53,7 @@
       </tr>
     </tfoot>
   </table>
+  </div>
 </div>
 {% else %}
 <div class="card"><p class="muted">Aucune donnée pour {{ month_name }} {{ year }}.</p></div>

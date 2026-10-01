@@ -31,6 +31,7 @@
 {% if payrolls %}
 <div class="card">
   <div class="card-title">Chatters</div>
+  <div class="table-wrap">
   <table class="table payroll-table">
     <thead><tr><th>Chatter</th><th>CA Net</th><th>Commission 8%</th><th>+ Primes</th><th>− Malus</th><th>Net à payer</th><th>PDF</th></tr></thead>
     <tbody>
@@ -48,6 +49,7 @@
     </tbody>
     <tfoot><tr><td><strong>TOTAL</strong></td><td></td><td></td><td></td><td></td><td><strong class="text-accent">{{ "%.2f"|format(total_mass) }} €</strong></td><td></td></tr></tfoot>
   </table>
+  </div>
 </div>
 {% else %}
 <div class="card"><p class="muted">Cliquez sur "Recalculer" pour générer les fiches.</p></div>

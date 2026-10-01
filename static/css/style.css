@@ -819,17 +819,188 @@ select { background-image:var(--select-arrow); background-repeat:no-repeat; back
 
 code { background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-xs); padding:2px 7px; font-family:'Consolas','JetBrains Mono',monospace; font-size:11px; color:var(--orange-light); }
 
-/* ──────────────────────────────────────────────────────────────────
-   RESPONSIVE MOBILE
-─────────────────────────────────────────────────────────────────── */
-@media(max-width:768px){
-  :root { --sidebar-w:260px; }
-  .sidebar { width:var(--sidebar-w)!important; transform:translateX(-100%); box-shadow:none; }
-  html[data-sidebar="open"] .sidebar { transform:translateX(0); box-shadow:var(--shadow-xl); }
-  html[data-sidebar="open"] .sidebar-overlay { display:block; }
+/* ══════════════════════════════════════════════════════════════════
+   RESPONSIVE — 4 breakpoints
+   1280px : Desktop large → standard
+    960px : Tablet paysage / Laptop petit
+    768px : Tablet portrait / Mobile large
+    480px : Mobile
+══════════════════════════════════════════════════════════════════ */
+
+/* ── 1280px — Desktop compact ──────────────────────────────────── */
+@media (max-width: 1280px) {
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  :root { --sidebar-w: 230px; }
+}
+
+/* ── 960px — Tablet paysage / Laptop 13" ───────────────────────── */
+@media (max-width: 960px) {
+  :root { --sidebar-w: 220px; }
+
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+
+  /* Planning shifts : 4 colonnes max */
+  .planning-grid { grid-template-columns: repeat(4, 1fr) !important; }
+
+  /* Tables : scroll horizontal avec indicateur */
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--r-sm);
+  }
+
+  /* Cacher colonnes secondaires des tables larges */
+  .ranking-table th:nth-child(6),
+  .ranking-table td:nth-child(6),
+  .ranking-table th:nth-child(7),
+  .ranking-table td:nth-child(7),
+  .ranking-table th:nth-child(8),
+  .ranking-table td:nth-child(8) { display: none; }
+
+  .payroll-table th:nth-child(3),
+  .payroll-table td:nth-child(3),
+  .payroll-table th:nth-child(4),
+  .payroll-table td:nth-child(4),
+  .payroll-table th:nth-child(5),
+  .payroll-table td:nth-child(5) { display: none; }
+}
+
+/* ── 768px — Tablet portrait / Mobile large ────────────────────── */
+@media (max-width: 768px) {
+  :root { --sidebar-w: 260px; }
+
+  /* ── Sidebar en overlay ── */
+  .sidebar {
+    width: var(--sidebar-w) !important;
+    transform: translateX(-100%);
+    box-shadow: none;
+    transition: transform var(--t-slow), box-shadow var(--t-slow);
+  }
+  html[data-sidebar="open"] .sidebar {
+    transform: translateX(0);
+    box-shadow: var(--shadow-xl);
+  }
+  html[data-sidebar="open"] .sidebar-overlay { display: block; }
   .main-content,
   html[data-sidebar="closed"] .main-content,
-  html[data-sidebar="open"]   .main-content { margin-left:0!important; }
-  .topbar-date { display:none; }
-  .page-body { padding:var(--sp-4) var(--sp-4) 40px; }
+  html[data-sidebar="open"]   .main-content { margin-left: 0 !important; }
+
+  /* ── Topbar ── */
+  .topbar { padding: 0 var(--sp-4); }
+  .topbar-date { display: none; }
+  .topbar-title { font-size: var(--fs-sm); }
+
+  /* ── Page body ── */
+  .page-body { padding: var(--sp-4) var(--sp-4) 48px; }
+
+  /* ── Grids ── */
+  .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
+  .grid-2-inner { grid-template-columns: repeat(2, 1fr); }
+
+  /* ── Planning shifts ── */
+  .planning-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* ── Chatter/model cards ── */
+  .grid-cards { grid-template-columns: 1fr; }
+
+  /* ── Date/week nav ── */
+  .date-nav, .week-nav { flex-wrap: wrap; gap: var(--sp-2); }
+  .week-label { width: 100%; text-align: center; font-size: var(--fs-sm); }
+
+  /* ── Formulaires ── */
+  .form-row { flex-direction: column; }
+  .form-row .form-group { min-width: 0; width: 100%; }
+  .inline-form-row { flex-direction: column; align-items: stretch; }
+  .inline-form-row input { min-width: 0; width: 100%; }
+  .inline-form-row .btn { width: 100%; justify-content: center; }
+  .form-actions { flex-direction: column-reverse; }
+  .form-actions .btn { width: 100%; justify-content: center; }
+
+  /* ── Tables : scroll horizontal via .table-wrap ── */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table { min-width: 480px; }
+
+  /* ── Quick actions ── */
+  .quick-actions { flex-direction: column; }
+  .quick-actions .btn { width: 100%; justify-content: center; }
+
+  /* ── Section header ── */
+  .section-header { flex-direction: column; align-items: flex-start; }
+  .action-group { width: 100%; }
+  .action-group .btn { flex: 1; justify-content: center; }
+
+  /* ── Filters ── */
+  .filters-bar { flex-direction: column; align-items: flex-start; }
+  .filters-form { width: 100%; }
+  .filters-form select { flex: 1; }
+
+  /* ── Shift display (espace chatter) ── */
+  .shift-display-time { font-size: var(--fs-2xl); }
+
+  /* ── Mois pills ── */
+  .months-list { gap: var(--sp-2); }
+  .month-pill { flex: 1; text-align: center; min-width: 120px; }
+
+  /* ── Rem rows ── */
+  .rem-row { flex-wrap: wrap; gap: var(--sp-1); }
+  .rem-row span { font-size: var(--fs-xs); }
+
+  /* ── Topbar right : compact ── */
+  .topbar-right { gap: var(--sp-2); }
+  .role-badge { display: none; }
 }
+
+/* ── 480px — Mobile ─────────────────────────────────────────────── */
+@media (max-width: 480px) {
+
+  /* ── Login ── */
+  .login-card { padding: var(--sp-6); border-radius: var(--r-lg); }
+  .login-logo  { margin-bottom: var(--sp-5); }
+
+  /* ── Page body ── */
+  .page-body { padding: var(--sp-3) var(--sp-3) 48px; }
+
+  /* ── Topbar ── */
+  .topbar { padding: 0 var(--sp-3); height: 52px; }
+  .topbar-title { max-width: 160px; }
+
+  /* ── Card ── */
+  .card { padding: var(--sp-4); border-radius: var(--r); }
+  .card-value { font-size: var(--fs-xl); }
+
+  /* ── KPI cards : 2 colonnes ── */
+  .grid-4 { grid-template-columns: repeat(2, 1fr); gap: var(--sp-3); }
+
+  /* ── Buttons ── */
+  .btn-lg { padding: 10px 20px; font-size: var(--fs-sm); }
+
+  /* ── Grid 2-inner ── */
+  .grid-2-inner { grid-template-columns: 1fr; }
+
+  /* ── Planning shifts ── */
+  .planning-grid { grid-template-columns: 1fr !important; }
+
+  /* ── Tables : cacher encore plus de colonnes ── */
+  .ranking-table th:nth-child(4),
+  .ranking-table td:nth-child(4),
+  .ranking-table th:nth-child(5),
+  .ranking-table td:nth-child(5) { display: none; }
+
+  /* ── Roster ── */
+  .roster-item { flex-wrap: wrap; }
+  .roster-actions { width: 100%; display: flex; gap: var(--sp-2); margin-top: var(--sp-2); }
+  .roster-actions .btn { flex: 1; justify-content: center; }
+
+  /* ── Shift display ── */
+  .shift-display { gap: var(--sp-3); }
+  .shift-display-time { font-size: var(--fs-xl); letter-spacing: -1px; }
+
+  /* ── Sales table ── */
+  .ca-input { width: 100px !important; }
+
+  /* ── Payslip ── */
+  .payslip-title { font-size: var(--fs-xl); }
+  .payslip-amount { font-size: var(--fs-xl); }
+}
+
