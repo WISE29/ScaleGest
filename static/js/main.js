@@ -66,11 +66,14 @@ document.addEventListener('keydown', function (e) {
   if (isMobile && !saved) closeSidebar();
 }());
 
-window.addEventListener('resize', function () {
-  if (!sidebar) return;
-  if (window.innerWidth <= 768 && getSidebarState() === 'open') {
-    document.documentElement.setAttribute('data-sidebar', 'closed');
-  }
+// Fermeture automatique sur mobile lors d'un clic sur un lien de navigation
+document.querySelectorAll('.nav-item').forEach(function (link) {
+  link.addEventListener('click', function () {
+    if (window.innerWidth <= 768) {
+      // On ferme sans écrire en localStorage pour ne pas écraser la préférence desktop
+      document.documentElement.setAttribute('data-sidebar', 'closed');
+    }
+  });
 });
 
 /* ──────────────────────────────────────────────────────────
@@ -201,3 +204,10 @@ function _syncChartColors() {
   Chart.defaults.plugins.tooltip.padding         = 10;
   Chart.defaults.plugins.tooltip.cornerRadius    = 8;
 }());
+
+window.addEventListener('resize', function () {
+  if (!sidebar) return;
+  if (window.innerWidth <= 768 && getSidebarState() === 'open') {
+    document.documentElement.setAttribute('data-sidebar', 'closed');
+  }
+});

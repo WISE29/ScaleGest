@@ -1,17 +1,23 @@
 {% extends "base.html" %}
-{% block title %}Mon Dashboard{% endblock %}
+{% block title %}Dashboard — Scale Gest{% endblock %}
 {% block page_title %}Bonjour {{ chatter.name }} 👋{% endblock %}
 {% block content %}
 
-<!-- KPIs personnels -->
+<!-- ── KPIs personnels ─────────────────────────────────── -->
+<h3 class="section-title">Mes performances</h3>
 <div class="grid-4">
   <div class="card card-accent card-kpi">
-    <div class="card-label">CA du mois</div>
+    <div class="card-label">Mon CA du mois</div>
     <div class="card-value">{{ "%.2f"|format(stats.ca) }} €</div>
     <div class="card-sub">{{ stats.days }} jour{% if stats.days > 1 %}s{% endif %} travaillé{% if stats.days > 1 %}s{% endif %}</div>
   </div>
   <div class="card card-kpi">
-    <div class="card-label">Classement</div>
+    <div class="card-label">Mon CA aujourd'hui</div>
+    <div class="card-value">{{ "%.2f"|format(ca_today_perso) }} €</div>
+    <div class="card-sub">{{ month_name }} {{ year }}</div>
+  </div>
+  <div class="card card-kpi">
+    <div class="card-label">Mon classement</div>
     <div class="card-value">
       {% if rank > 0 %}
         <span class="rank rank-{{ rank }}">#{{ rank }}</span>
@@ -24,75 +30,135 @@
     <div class="card-value text-accent">{{ "%.2f"|format(stats.final_salary) }} €</div>
     <div class="card-sub">Commission 8 % + primes − malus</div>
   </div>
+</div>
+
+<!-- ── Mon shift ──────────────────────────────────────── -->
+{% if shift_start and shift_end %}
+<div class="card" style="margin-bottom:var(--sp-4)">
+  <div class="card-label">Mon shift permanent</div>
+  <div style="display:flex;align-items:center;gap:var(--sp-4);margin-top:var(--sp-2)">
+    <span style="font-size:var(--fs-xl);font-weight:var(--fw-black);color:var(--text-1);font-variant-numeric:tabular-nums;letter-spacing:-0.5px">{{ shift_start }}</span>
+    <span style="color:var(--accent-light);font-size:var(--fs-lg)">→</span>
+    <span style="font-size:var(--fs-xl);font-weight:var(--fw-black);color:var(--text-1);font-variant-numeric:tabular-nums;letter-spacing:-0.5px">{{ shift_end }}</span>
+    <a href="{{ url_for('chatter_space.my_shift') }}" class="btn btn-ghost btn-sm" style="margin-left:auto">Détails →</a>
+  </div>
+</div>
+{% endif %}
+
+<!-- ── CA équipe du jour ──────────────────────────────── -->
+<h3 class="section-title">Équipe — {{ today.strftime('%d/%m/%Y') if today else '' }}</h3>
+<div class="grid-3">
   <div class="card card-kpi">
-    <div class="card-label">Mon shift</div>
-    <div class="card-value" style="font-size:var(--fs-xl)">
-      {% if shift_start and shift_end %}
-        {{ shift_start }} → {{ shift_end }}
-      {% else %}
-        <span class="text-muted" style="font-size:var(--fs-md)">Non défini</span>
-      {% endif %}
-    </div>
-    <div class="card-sub"><a href="{{ url_for('chatter_space.my_shift') }}">Voir mon shift →</a></div>
+    <div class="card-label">CA équipe aujourd'hui</div>
+    <div class="card-value">{{ "%.2f"|format(ca_equipe_today) }} €</div>
+    <div class="card-sub">Total des chatters</div>
+  </div>
+  <div class="card card-kpi">
+    <div class="card-label">CA équipe du mois</div>
+    <div class="card-value">{{ "%.2f"|format(ca_total_mois) }} €</div>
+    <div class="card-sub">{{ month_name }} {{ year }}</div>
+  </div>
+  <div class="card card-kpi">
+    <div class="card-label">Moyenne journalière équipe</div>
+    <div class="card-value">{{ "%.2f"|format(avg_journaliere) }} €</div>
+    <div class="card-sub">Par jour ce mois-ci</div>
   </div>
 </div>
 
-<!-- Détail rémunération -->
-<div class="grid-2">
-  <div class="card">
-    <div class="card-title">💵 Détail rémunération — {{ month_name }} {{ year }}</div>
-    <div class="rem-row">
-      <span>CA net</span>
-      <strong>{{ "%.2f"|format(stats.ca) }} €</strong>
+<!-- ── Objectif mensuel équipe ────────────────────────── -->
+{% if obj_stats %}
+<div class="card" style="margin-bottom:var(--sp-4)">
+  <div class="card-title">🎯 Objectif équipe — {{ month_name }} {{ year }}</div>
+  <div class="grid-3" style="margin-bottom:0">
+    <div>
+      <div class="card-label">Objectif</div>
+      <div class="card-value-sm">{{ "%.2f"|format(obj_stats.objective) }} €</div>
     </div>
-    <div class="rem-row">
-      <span>Commission de base (× 8 %)</span>
-      <strong>{{ "%.2f"|format(stats.base_commission) }} €</strong>
-    </div>
-    <div class="rem-row positive">
-      <span>+ Primes</span>
-      <strong>{{ "%.2f"|format(stats.total_bonuses) }} €</strong>
-    </div>
-    <div class="rem-row negative">
-      <span>− Malus</span>
-      <strong>{{ "%.2f"|format(stats.total_penalties) }} €</strong>
-    </div>
-    <div class="rem-row rem-total">
-      <span>= Net estimé</span>
-      <strong>{{ "%.2f"|format(stats.final_salary) }} €</strong>
-    </div>
-    <div class="card-actions">
-      <a href="{{ url_for('chatter_space.my_remuneration') }}" class="btn btn-ghost">Détail complet →</a>
-    </div>
-  </div>
-
-  <!-- Dernière fiche de paie -->
-  <div class="card">
-    <div class="card-title">🧾 Dernière fiche de paie</div>
-    {% if last_payroll %}
-    <div class="payslip-preview">
-      <div class="payslip-period">{{ months_fr[last_payroll.month] }} {{ last_payroll.year }}</div>
-      <div class="payslip-amount">{{ "%.2f"|format(last_payroll.final_amount) }} €</div>
-      <div class="payslip-detail">
-        <span>CA : {{ "%.2f"|format(last_payroll.base_commission / 0.08) }} €</span>
-        <span>Commission : {{ "%.2f"|format(last_payroll.base_commission) }} €</span>
+    <div>
+      <div class="card-label">Atteint</div>
+      <div class="card-value-sm {% if obj_stats.progression >= 100 %}text-success{% elif obj_stats.progression >= 70 %}text-accent{% else %}text-warning{% endif %}">
+        {{ "%.1f"|format(obj_stats.progression) }} %
       </div>
     </div>
-    <div class="card-actions">
-      <a href="{{ url_for('chatter_space.my_payslip_detail', year=last_payroll.year, month=last_payroll.month) }}"
-         class="btn btn-ghost">Voir la fiche →</a>
-      <a href="{{ url_for('chatter_space.my_payslips') }}" class="btn btn-ghost">Toutes les fiches →</a>
+    <div>
+      <div class="card-label">Restant</div>
+      <div class="card-value-sm text-warning">{{ "%.2f"|format(obj_stats.ca_remaining) }} €</div>
     </div>
+  </div>
+  <div class="progress-bar-wrap" style="margin-top:var(--sp-4)">
+    <div class="progress-bar" style="width:{{ [obj_stats.progression,100]|min }}%"></div>
+  </div>
+  <div style="display:flex;justify-content:space-between;margin-top:var(--sp-2)">
+    <span class="muted">{{ obj_stats.days_elapsed }} jours écoulés</span>
+    <span class="muted">{{ obj_stats.days_remaining }} jours restants</span>
+  </div>
+</div>
+{% elif objectif == 0 %}
+<div class="card card-muted" style="margin-bottom:var(--sp-4)">
+  <div class="card-label">Objectif équipe</div>
+  <p class="muted" style="margin-top:var(--sp-2)">Aucun objectif défini par le manager ce mois-ci.</p>
+</div>
+{% endif %}
+
+<!-- ── Classement top 5 ───────────────────────────────── -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">🏆 Classement du mois — Top 5</div>
+    {% if top5 %}
+    <table class="table">
+      <thead><tr><th>#</th><th>Chatter</th><th>CA</th><th>Moy./j</th></tr></thead>
+      <tbody>
+      {% for entry in top5 %}
+      <tr {% if entry.chatter.id == chatter.id %}style="background:var(--orange-soft)!important"{% endif %}>
+        <td><span class="rank rank-{{ loop.index }}">{{ loop.index }}</span></td>
+        <td>
+          {{ entry.chatter.name }}
+          {% if entry.chatter.id == chatter.id %}<span class="badge badge-active" style="margin-left:4px">Moi</span>{% endif %}
+        </td>
+        <td><strong>{{ "%.2f"|format(entry.ca) }} €</strong></td>
+        <td>{{ "%.2f"|format(entry.avg) }} €</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
     {% else %}
-    <p class="muted">Aucune fiche de paie disponible pour l'instant.</p>
+    <p class="muted">Aucune donnée pour ce mois.</p>
+    {% endif %}
+  </div>
+
+  <!-- Rémunération détail + dernière fiche -->
+  <div class="grid-1">
+    <div class="card">
+      <div class="card-title">💵 Ma rémunération — {{ month_name }}</div>
+      <div class="rem-row"><span>Commission de base (× 8 %)</span><strong>{{ "%.2f"|format(stats.base_commission) }} €</strong></div>
+      <div class="rem-row positive"><span>+ Primes</span><strong>{{ "%.2f"|format(stats.total_bonuses) }} €</strong></div>
+      <div class="rem-row negative"><span>− Malus</span><strong>{{ "%.2f"|format(stats.total_penalties) }} €</strong></div>
+      <div class="rem-row rem-total"><span>= Net estimé</span><strong>{{ "%.2f"|format(stats.final_salary) }} €</strong></div>
+      <div class="card-actions">
+        <a href="{{ url_for('chatter_space.my_remuneration') }}" class="btn btn-ghost btn-sm">Détail →</a>
+      </div>
+    </div>
+
+    {% if last_payroll %}
+    <div class="card">
+      <div class="card-title">🧾 Dernière fiche de paie</div>
+      <div class="payslip-preview">
+        <div class="payslip-period">{{ months_fr[last_payroll.month] }} {{ last_payroll.year }}</div>
+        <div class="payslip-amount">{{ "%.2f"|format(last_payroll.final_amount) }} €</div>
+      </div>
+      <div class="card-actions">
+        <a href="{{ url_for('chatter_space.my_payslip_detail', year=last_payroll.year, month=last_payroll.month) }}" class="btn btn-ghost btn-sm">Voir →</a>
+      </div>
+    </div>
     {% endif %}
   </div>
 </div>
 
-<!-- Accès rapides -->
+<!-- ── Accès rapides ──────────────────────────────────── -->
 <div class="quick-actions">
   <a href="{{ url_for('chatter_space.my_ca') }}" class="btn btn-primary">📊 Mon CA</a>
   <a href="{{ url_for('chatter_space.my_shift') }}" class="btn btn-secondary">🕐 Mon shift</a>
+  <a href="{{ url_for('chatter_space.my_objectives') }}" class="btn btn-secondary">🎯 Mes objectifs</a>
   <a href="{{ url_for('chatter_space.my_remuneration') }}" class="btn btn-secondary">💵 Rémunération</a>
   <a href="{{ url_for('chatter_space.my_payslips') }}" class="btn btn-secondary">🧾 Fiches de paie</a>
 </div>

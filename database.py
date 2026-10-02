@@ -354,6 +354,17 @@ def _apply_sqlite_schema(conn):
             UNIQUE(chatter_id, model_id)
         )
     """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS chatter_objectives (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            chatter_id INTEGER NOT NULL,
+            month INTEGER NOT NULL,
+            year INTEGER NOT NULL,
+            amount REAL NOT NULL DEFAULT 0,
+            FOREIGN KEY (chatter_id) REFERENCES chatters(id) ON DELETE CASCADE,
+            UNIQUE(chatter_id, month, year)
+        )
+    """)
 
 
 def _ensure_manager(app):

@@ -150,3 +150,15 @@ CREATE TABLE IF NOT EXISTS chatter_models (
 
 CREATE INDEX IF NOT EXISTS idx_chatter_models_chatter ON chatter_models(chatter_id);
 CREATE INDEX IF NOT EXISTS idx_chatter_models_model   ON chatter_models(model_id);
+
+-- ── Objectifs personnels des chatters ───────────────────
+CREATE TABLE IF NOT EXISTS chatter_objectives (
+    id          SERIAL PRIMARY KEY,
+    chatter_id  INTEGER NOT NULL REFERENCES chatters(id) ON DELETE CASCADE,
+    month       SMALLINT NOT NULL CHECK (month BETWEEN 1 AND 12),
+    year        SMALLINT NOT NULL CHECK (year >= 2020),
+    amount      NUMERIC(12,2) NOT NULL DEFAULT 0,
+    UNIQUE (chatter_id, month, year)
+);
+
+CREATE INDEX IF NOT EXISTS idx_chatter_obj ON chatter_objectives(chatter_id);

@@ -565,3 +565,31 @@ def get_unassigned_models(chatter_id: int) -> list:
            ORDER BY m.name""",
         (chatter_id,), fetch="all"
     ) or []
+
+
+# ─── Objectifs personnels des chatters ───────────────────────────────────────
+
+def get_chatter_objective(chatter_id: int, month: int, year: int) -> float:
+    row = run_sql(
+        "SELECT amount FROM chatter_objectives WHERE chatter_id=%s AND month=%s AND year=%s",
+        (chatter_id, month, year), fetch="one"
+    )
+    return float(row["amount"]) if row else 0.0
+
+
+def upsert_chatter_objective(chatter_id: int, month: int, year: int, amount: float) -> None:
+    run_sql(
+        """INSERT INTO chatter_objectives (chatter_id, month, year, amount)
+           VALUES (%s, %s, %s, %s)
+           ON CONFLICT (chatter_id, month, year) DO UPDATE SET amount=EXCLUDED.amount""",
+        (chatter_id, month, year, amount)
+    )
+    commit()
+
+
+def get_all_chatter_objectives(chatter_id: int) -> list:
+    return run_sql(
+        """SELECT * FROM chatter_objectives WHERE chatter_id=%s
+           ORDER BY year DESC, month DESC""",
+        (chatter_id,), fetch="all"
+    ) or []

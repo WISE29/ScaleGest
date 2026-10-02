@@ -119,6 +119,11 @@
        data-label="Mes Modèles">
       <span class="nav-icon-wrap">👩</span><span class="nav-item-text">Mes modèles</span>
     </a>
+    <a href="{{ url_for('chatter_space.my_objectives') }}"
+       class="nav-item {% if request.endpoint == 'chatter_space.my_objectives' %}active{% endif %}"
+       data-label="Mes Objectifs">
+      <span class="nav-icon-wrap">🎯</span><span class="nav-item-text">Mes objectifs</span>
+    </a>
     <a href="{{ url_for('chatter_space.my_remuneration') }}"
        class="nav-item {% if request.endpoint == 'chatter_space.my_remuneration' %}active{% endif %}"
        data-label="Rémunération">
