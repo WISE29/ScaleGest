@@ -593,3 +593,69 @@ def get_all_chatter_objectives(chatter_id: int) -> list:
            ORDER BY year DESC, month DESC""",
         (chatter_id,), fetch="all"
     ) or []
+
+
+# ─── Recruteurs ───────────────────────────────────────────────────────────────
+
+RECRUITER_RATE = 0.01  # 1 % du CA des chatters affiliés
+
+
+def get_all_recruiters() -> list:
+    """Retourne tous les utilisateurs avec rôle recruiter."""
+    return run_sql(
+        """SELECT u.*, COUNT(c.id) AS nb_chatters
+           FROM users u
+           LEFT JOIN chatters c ON c.recruiter_id = u.id AND c.status = 'active'
+           WHERE u.role = 'recruiter'
+           GROUP BY u.id
+           ORDER BY u.username""",
+        fetch="all"
+    ) or []
+
+
+def get_recruiter(user_id: int) -> dict | None:
+    return run_sql(
+        "SELECT * FROM users WHERE id=%s AND role='recruiter'",
+        (user_id,), fetch="one"
+    )
+
+
+def get_recruiter_chatters(recruiter_id: int) -> list:
+    """Retourne les chatters affiliés à ce recruteur."""
+    return run_sql(
+        "SELECT * FROM chatters WHERE recruiter_id=%s ORDER BY name",
+        (recruiter_id,), fetch="all"
+    ) or []
+
+
+def affiliate_chatter(chatter_id: int, recruiter_id: int | None) -> None:
+    """Affilie un chatter à un recruteur (ou le désaffilie si recruiter_id=None)."""
+    run_sql(
+        "UPDATE chatters SET recruiter_id=%s WHERE id=%s",
+        (recruiter_id, chatter_id)
+    )
+    commit()
+
+
+def get_recruiter_commission(recruiter_id: int, month: int, year: int) -> dict:
+    """Calcule la commission du recruteur pour un mois donné."""
+    chatters = get_recruiter_chatters(recruiter_id)
+    total_ca = 0.0
+    details  = []
+    for c in chatters:
+        s = get_chatter_month_stats(c["id"], month, year)
+        total_ca += s["ca"]
+        details.append({
+            "chatter":      c,
+            "ca":           s["ca"],
+            "days":         s["days"],
+            "avg":          s["avg"],
+            "final_salary": s["final_salary"],
+        })
+    commission = round(total_ca * RECRUITER_RATE, 2)
+    return {
+        "total_ca":   total_ca,
+        "commission": commission,
+        "rate":       RECRUITER_RATE,
+        "details":    details,
+    }

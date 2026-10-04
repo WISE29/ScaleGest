@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}{{ chatter.name }} — Scale Gest{% endblock %}
+{% block page_title %}👤 {{ chatter.name }}{% endblock %}
+{% block content %}
+
+<!-- Sélecteur de mois -->
+<div class="filters-bar">
+  <form method="get" class="filters-form">
+    <select name="month" onchange="this.form.submit()">
+      {% for m in available_months %}
+      <option value="{{ m.month }}" data-year="{{ m.year }}"
+        {% if m.month == month and m.year == year %}selected{% endif %}>
+        {{ months_fr[m.month] }} {{ m.year }}
+      </option>
+      {% endfor %}
+    </select>
+    <input type="hidden" name="year" id="year-in" value="{{ year }}" />
+  </form>
+  <a href="{{ url_for('recruiter_space.my_chatters') }}" class="btn btn-ghost">← Retour</a>
+</div>
+
+<!-- KPIs -->
+<div class="grid-4">
+  <div class="card card-kpi card-accent">
+    <div class="card-label">CA du mois</div>
+    <div class="card-value">{{ "%.2f"|format(stats.ca) }} €</div>
+  </div>
+  <div class="card card-kpi">
+    <div class="card-label">CA aujourd'hui</div>
+    <div class="card-value">{{ "%.2f"|format(ca_today) }} €</div>
+  </div>
+  <div class="card card-kpi">
+    <div class="card-label">Classement</div>
+    <div class="card-value">{% if rank > 0 %}<span class="rank rank-{{ rank }}">#{{ rank }}</span>{% else %}—{% endif %}</div>
+  </div>
+  <div class="card card-kpi">
+    <div class="card-label">Rémunération estimée</div>
+    <div class="card-value text-accent">{{ "%.2f"|format(stats.final_salary) }} €</div>
+  </div>
+</div>
+
+<!-- Détail rémunération -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">💵 Rémunération — {{ month_name }} {{ year }}</div>
+    <div class="rem-row"><span>CA net</span><strong>{{ "%.2f"|format(stats.ca) }} €</strong></div>
+    <div class="rem-row"><span>Commission base (8 %)</span><strong>{{ "%.2f"|format(stats.base_commission) }} €</strong></div>
+    <div class="rem-row positive"><span>+ Primes</span><strong>{{ "%.2f"|format(stats.total_bonuses) }} €</strong></div>
+    <div class="rem-row negative"><span>− Malus</span><strong>{{ "%.2f"|format(stats.total_penalties) }} €</strong></div>
+    <div class="rem-row rem-total"><span>= Net estimé</span><strong>{{ "%.2f"|format(stats.final_salary) }} €</strong></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📋 Informations</div>
+    <div class="info-row"><span>Statut</span><span class="badge badge-{{ chatter.status }}">{{ chatter.status }}</span></div>
+    <div class="info-row"><span>Date d'arrivée</span><span>{{ chatter.date_joined }}</span></div>
+    <div class="info-row">
+      <span>Shift</span>
+      <strong>{% if chatter.shift_start %}{{ chatter.shift_start|short }} → {{ chatter.shift_end|short }}{% else %}Non défini{% endif %}</strong>
+    </div>
+    <div class="info-row"><span>Jours travaillés</span><strong>{{ stats.days }}</strong></div>
+    <div class="info-row"><span>Moyenne/jour</span><strong>{{ "%.2f"|format(stats.avg) }} €</strong></div>
+  </div>
+</div>
+
+<!-- Primes & Malus -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">🎁 Primes — {{ month_name }}</div>
+    {% if bonuses %}
+    <table class="table">
+      <thead><tr><th>Date</th><th>Motif</th><th>Montant</th></tr></thead>
+      <tbody>
+      {% for b in bonuses %}
+      <tr><td>{{ b.date }}</td><td>{{ b.reason }}</td><td class="positive">+{{ "%.2f"|format(b.amount) }} €</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<p class="muted">Aucune prime ce mois-ci.</p>{% endif %}
+  </div>
+  <div class="card">
+    <div class="card-title">⚠️ Malus — {{ month_name }}</div>
+    {% if penalties %}
+    <table class="table">
+      <thead><tr><th>Date</th><th>Motif</th><th>Montant</th></tr></thead>
+      <tbody>
+      {% for p in penalties %}
+      <tr><td>{{ p.date }}</td><td>{{ p.reason }}</td><td class="negative">−{{ "%.2f"|format(p.amount) }} €</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<p class="muted">Aucun malus ce mois-ci.</p>{% endif %}
+  </div>
+</div>
+
+<!-- Fiches de paie -->
+{% if payrolls %}
+<div class="card">
+  <div class="card-title">🧾 Fiches de paie validées</div>
+  <table class="table">
+    <thead><tr><th>Mois</th><th>Année</th><th>Commission</th><th>Primes</th><th>Malus</th><th>Net à payer</th></tr></thead>
+    <tbody>
+    {% for p in payrolls %}
+    <tr>
+      <td>{{ months_fr[p.month] }}</td>
+      <td>{{ p.year }}</td>
+      <td>{{ "%.2f"|format(p.base_commission) }} €</td>
+      <td class="positive">+{{ "%.2f"|format(p.bonuses) }} €</td>
+      <td class="negative">−{{ "%.2f"|format(p.penalties) }} €</td>
+      <td><strong class="text-accent">{{ "%.2f"|format(p.final_amount) }} €</strong></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% endblock %}
+{% block scripts %}
+<script>
+document.querySelector('select[name="month"]')?.addEventListener('change', function () {
+  var opt = this.options[this.selectedIndex];
+  if (opt && opt.dataset.year) document.getElementById('year-in').value = opt.dataset.year;
+});
+</script>
+{% endblock %}

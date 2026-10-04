@@ -113,4 +113,6 @@ def logout():
 def _redirect_after_login(user: User):
     if user.is_manager:
         return redirect(url_for("manager.dashboard"))
+    if user.role == "recruiter":
+        return redirect(url_for("recruiter_space.dashboard"))
     return redirect(url_for("chatter_space.dashboard"))

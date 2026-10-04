@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}{{ recruiter.username }} — Recruteur{% endblock %}
+{% block page_title %}🤝 Recruteur : {{ recruiter.username }}{% endblock %}
+{% block content %}
+
+<div class="filters-bar">
+  <form method="get" class="filters-form">
+    <select name="month" onchange="this.form.submit()">
+      {% for m in available_months %}
+      <option value="{{ m.month }}" data-year="{{ m.year }}"
+        {% if m.month == month and m.year == year %}selected{% endif %}>
+        {{ months_fr[m.month] }} {{ m.year }}
+      </option>
+      {% endfor %}
+    </select>
+    <input type="hidden" name="year" id="year-in" value="{{ year }}" />
+  </form>
+  <a href="{{ url_for('manager.recruiters_list') }}" class="btn btn-ghost">← Retour</a>
+</div>
+
+<div class="grid-3">
+  <div class="card card-kpi card-accent">
+    <div class="card-label">CA équipe — {{ month_name }}</div>
+    <div class="card-value">{{ "%.2f"|format(commission_data.total_ca) }} €</div>
+  </div>
+  <div class="card card-kpi card-amber">
+    <div class="card-label">Commission (1 %)</div>
+    <div class="card-value text-accent">{{ "%.2f"|format(commission_data.commission) }} €</div>
+  </div>
+  <div class="card card-kpi">
+    <div class="card-label">Chatters affiliés</div>
+    <div class="card-value">{{ commission_data.details|length }}</div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- Affilier un chatter -->
+  <div class="card">
+    <div class="card-title">Affilier un chatter</div>
+    {% if available %}
+    <form method="post" action="{{ url_for('manager.recruiter_affiliate', recruiter_id=recruiter.id) }}"
+          class="form-row">
+      <div class="form-group" style="flex:1">
+        <label>Chatter disponible</label>
+        <select name="chatter_id" required>
+          <option value="">— Sélectionner —</option>
+          {% for c in available %}
+          <option value="{{ c.id }}">{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group form-group-submit">
+        <label>&nbsp;</label>
+        <button type="submit" class="btn btn-primary">Affilier</button>
+      </div>
+    </form>
+    {% else %}
+    <p class="muted">Tous les chatters actifs sont déjà affiliés (à ce recruteur ou un autre).</p>
+    {% endif %}
+  </div>
+
+  <!-- Infos recruteur -->
+  <div class="card">
+    <div class="card-title">Informations</div>
+    <div class="info-row"><span>Identifiant</span><strong>{{ recruiter.username }}</strong></div>
+    <div class="info-row"><span>Rôle</span><span class="badge" style="background:var(--teal-soft);color:var(--teal-text)">Recruteur</span></div>
+    <div class="info-row"><span>Statut</span><span class="badge badge-{{ 'active' if recruiter.active else 'inactive' }}">{{ 'Actif' if recruiter.active else 'Inactif' }}</span></div>
+  </div>
+</div>
+
+<!-- Liste des chatters affiliés -->
+<div class="card">
+  <div class="card-title">👥 Chatters affiliés — {{ month_name }} {{ year }}</div>
+  {% if commission_data.details %}
+  <table class="table">
+    <thead>
+      <tr><th>Chatter</th><th>CA</th><th>Jours</th><th>Moy./j</th><th>Rémunération</th><th></th></tr>
+    </thead>
+    <tbody>
+    {% for entry in commission_data.details %}
+    <tr>
+      <td><a href="{{ url_for('manager.chatter_detail', chatter_id=entry.chatter.id) }}">{{ entry.chatter.name }}</a></td>
+      <td><strong>{{ "%.2f"|format(entry.ca) }} €</strong></td>
+      <td>{{ entry.days }}</td>
+      <td>{{ "%.2f"|format(entry.avg) }} €</td>
+      <td class="text-accent">{{ "%.2f"|format(entry.final_salary) }} €</td>
+      <td>
+        <form method="post"
+              action="{{ url_for('manager.recruiter_unaffiliate', recruiter_id=recruiter.id, chatter_id=entry.chatter.id) }}"
+              onsubmit="return confirm('Désaffilier {{ entry.chatter.name }} ?')">
+          <button class="btn btn-xs btn-danger">Désaffilier</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">Aucun chatter affilié.</p>
+  {% endif %}
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+document.querySelector('select[name="month"]')?.addEventListener('change', function () {
+  var opt = this.options[this.selectedIndex];
+  if (opt && opt.dataset.year) document.getElementById('year-in').value = opt.dataset.year;
+});
+</script>
+{% endblock %}

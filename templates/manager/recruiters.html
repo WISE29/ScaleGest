@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Recruteurs — Scale Gest{% endblock %}
+{% block page_title %}🤝 Recruteurs{% endblock %}
+{% block content %}
+
+<div class="section-header">
+  <div></div>
+  <a href="{{ url_for('manager.users_list') }}" class="btn btn-primary">+ Créer un compte recruteur</a>
+</div>
+
+{% if recruiters %}
+<div class="grid-cards">
+{% for r in recruiters %}
+{% set com = commissions[r.id] %}
+<div class="chatter-card">
+  <div class="chatter-card-header">
+    <div class="chatter-avatar" style="background:linear-gradient(135deg,rgba(20,184,166,.22),rgba(20,184,166,.07));border-color:rgba(20,184,166,.2);color:var(--teal)">
+      {{ r.username[0]|upper }}
+    </div>
+    <div class="chatter-info">
+      <div class="chatter-name">{{ r.username }}</div>
+      <div class="chatter-meta">{{ r.nb_chatters }} chatter{% if r.nb_chatters != 1 %}s{% endif %} affilié{% if r.nb_chatters != 1 %}s{% endif %}</div>
+    </div>
+    <span class="badge" style="background:var(--teal-soft);color:var(--teal-text)">Recruteur</span>
+  </div>
+  <div class="chatter-stats">
+    <div class="stat-row"><span>CA équipe — {{ month_name }}</span><strong>{{ "%.2f"|format(com.total_ca) }} €</strong></div>
+    <div class="stat-row"><span>Commission (1 %)</span><strong class="text-accent">{{ "%.2f"|format(com.commission) }} €</strong></div>
+  </div>
+  <div class="chatter-card-actions">
+    <a href="{{ url_for('manager.recruiter_detail', recruiter_id=r.id) }}" class="btn btn-sm btn-primary">Gérer</a>
+  </div>
+</div>
+{% endfor %}
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:40px">
+  <div style="font-size:48px;margin-bottom:12px">🤝</div>
+  <p class="muted">Aucun recruteur. Créez un compte avec le rôle "Recruteur" depuis la gestion des comptes.</p>
+  <div style="margin-top:20px">
+    <a href="{{ url_for('manager.users_list') }}" class="btn btn-primary">Gérer les comptes →</a>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

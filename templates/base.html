@@ -9,10 +9,18 @@
   <script>
     (function(){
       var root = document.documentElement;
+      // Thème
       var t = localStorage.getItem('cm-theme');
       if (t === 'light' || t === 'dark') root.setAttribute('data-theme', t);
-      var s = localStorage.getItem('cm-sidebar');
-      if (s === 'closed') root.setAttribute('data-sidebar', 'closed');
+      // Sidebar : sur mobile on ne restaure jamais depuis localStorage
+      // (le JS initSidebar() force fermé sur mobile après le chargement)
+      var isMobile = window.innerWidth <= 768;
+      if (!isMobile) {
+        var s = localStorage.getItem('cm-sidebar');
+        if (s === 'closed') root.setAttribute('data-sidebar', 'closed');
+      } else {
+        root.setAttribute('data-sidebar', 'closed');
+      }
     }());
   </script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ asset_version }}" />
@@ -80,6 +88,11 @@
        data-label="Modèles">
       <span class="nav-icon-wrap">👩</span><span class="nav-item-text">Modèles</span>
     </a>
+    <a href="{{ url_for('manager.recruiters_list') }}"
+       class="nav-item {% if 'recruiter' in request.endpoint %}active{% endif %}"
+       data-label="Recruteurs">
+      <span class="nav-icon-wrap">🤝</span><span class="nav-item-text">Recruteurs</span>
+    </a>
     <a href="{{ url_for('manager.payroll_list') }}"
        class="nav-item {% if 'payroll' in request.endpoint %}active{% endif %}"
        data-label="Paies">
@@ -94,6 +107,25 @@
        class="nav-item {% if request.endpoint == 'manager.settings' %}active{% endif %}"
        data-label="Paramètres">
       <span class="nav-icon-wrap">⚙️</span><span class="nav-item-text">Paramètres</span>
+    </a>
+
+    {% elif current_user.is_authenticated and current_user.role == 'recruiter' %}
+    <!-- ── Navigation Recruteur ── -->
+    <p class="nav-section-label">Mon espace</p>
+    <a href="{{ url_for('recruiter_space.dashboard') }}"
+       class="nav-item {% if request.endpoint == 'recruiter_space.dashboard' %}active{% endif %}"
+       data-label="Dashboard">
+      <span class="nav-icon-wrap">🏠</span><span class="nav-item-text">Dashboard</span>
+    </a>
+    <a href="{{ url_for('recruiter_space.my_chatters') }}"
+       class="nav-item {% if request.endpoint == 'recruiter_space.my_chatters' or request.endpoint == 'recruiter_space.chatter_detail' %}active{% endif %}"
+       data-label="Mes chatters">
+      <span class="nav-icon-wrap">👥</span><span class="nav-item-text">Mes chatters</span>
+    </a>
+    <a href="{{ url_for('recruiter_space.my_commission') }}"
+       class="nav-item {% if request.endpoint == 'recruiter_space.my_commission' %}active{% endif %}"
+       data-label="Ma commission">
+      <span class="nav-icon-wrap">💰</span><span class="nav-item-text">Ma commission</span>
     </a>
 
     {% elif current_user.is_authenticated and current_user.is_chatter %}
@@ -168,6 +200,16 @@
       </form>
       {% endif %}
       <span class="topbar-date" id="live-date"></span>
+      <div class="currency-select-wrap" title="Changer de devise">
+        <select id="currency-select" class="currency-select">
+          <option value="EUR" data-symbol="€"    data-before="false">€ EUR</option>
+          <option value="USD" data-symbol="$"    data-before="true">$ USD</option>
+          <option value="GBP" data-symbol="£"    data-before="true">£ GBP</option>
+          <option value="CAD" data-symbol="CA$"  data-before="true">CA$ CAD</option>
+          <option value="XOF" data-symbol="FCFA" data-before="false">FCFA</option>
+          <option value="MAD" data-symbol="DH"   data-before="false">DH MAD</option>
+        </select>
+      </div>
       <button class="theme-toggle" id="theme-toggle" aria-label="Thème">
         <span class="t-icon t-sun">☀️</span>
         <span class="t-icon t-moon">🌙</span>

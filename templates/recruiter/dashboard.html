@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Dashboard Recruteur — Scale Gest{% endblock %}
+{% block page_title %}🤝 Mon tableau de bord{% endblock %}
+{% block content %}
+
+<div class="grid-4">
+  <div class="card card-accent card-kpi">
+    <div class="card-label">CA équipe ce mois</div>
+    <div class="card-value">{{ "%.2f"|format(commission_data.total_ca) }} €</div>
+    <div class="card-sub">{{ commission_data.details|length }} chatter{% if commission_data.details|length != 1 %}s{% endif %} affilié{% if commission_data.details|length != 1 %}s{% endif %}</div>
+  </div>
+  <div class="card card-kpi">
+    <div class="card-label">CA équipe aujourd'hui</div>
+    <div class="card-value">{{ "%.2f"|format(ca_today) }} €</div>
+    <div class="card-sub">{{ month_name }} {{ year }}</div>
+  </div>
+  <div class="card card-kpi card-amber">
+    <div class="card-label">Ma commission (1 %)</div>
+    <div class="card-value text-accent">{{ "%.2f"|format(commission_data.commission) }} €</div>
+    <div class="card-sub">1 % du CA total</div>
+  </div>
+  <div class="card card-kpi">
+    <div class="card-label">Chatters affiliés</div>
+    <div class="card-value">{{ commission_data.details|length }}</div>
+    <div class="card-sub"><a href="{{ url_for('recruiter_space.my_chatters') }}">Voir →</a></div>
+  </div>
+</div>
+
+{% if commission_data.details %}
+<div class="card">
+  <div class="card-title">📊 Performances — {{ month_name }} {{ year }}</div>
+  <table class="table">
+    <thead>
+      <tr><th>Chatter</th><th>CA</th><th>Jours</th><th>Moy./j</th><th>Rémunération</th></tr>
+    </thead>
+    <tbody>
+    {% for entry in commission_data.details %}
+    <tr>
+      <td><a href="{{ url_for('recruiter_space.chatter_detail', chatter_id=entry.chatter.id) }}">{{ entry.chatter.name }}</a></td>
+      <td><strong>{{ "%.2f"|format(entry.ca) }} €</strong></td>
+      <td>{{ entry.days }}</td>
+      <td>{{ "%.2f"|format(entry.avg) }} €</td>
+      <td class="text-accent">{{ "%.2f"|format(entry.final_salary) }} €</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td><strong>TOTAL</strong></td>
+        <td><strong>{{ "%.2f"|format(commission_data.total_ca) }} €</strong></td>
+        <td colspan="2"></td>
+        <td><strong class="text-accent">{{ "%.2f"|format(commission_data.commission) }} € (ma commission)</strong></td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+{% else %}
+<div class="card">
+  <p class="muted">Aucun chatter affilié. Contactez le manager pour être affilié à des chatters.</p>
+</div>
+{% endif %}
+
+<div class="quick-actions">
+  <a href="{{ url_for('recruiter_space.my_chatters') }}" class="btn btn-primary">👥 Mes chatters</a>
+  <a href="{{ url_for('recruiter_space.my_commission') }}" class="btn btn-secondary">💰 Ma commission</a>
+</div>
+
+{% endblock %}

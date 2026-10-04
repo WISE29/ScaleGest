@@ -162,3 +162,35 @@ CREATE TABLE IF NOT EXISTS chatter_objectives (
 );
 
 CREATE INDEX IF NOT EXISTS idx_chatter_obj ON chatter_objectives(chatter_id);
+
+-- ── Recruteurs : colonne recruiter_id sur chatters ──────
+-- Un chatter peut être affilié à un seul recruteur (ou aucun)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name='chatters' AND column_name='recruiter_id'
+    ) THEN
+        ALTER TABLE chatters ADD COLUMN recruiter_id INTEGER
+            REFERENCES users(id) ON DELETE SET NULL;
+    END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_chatters_recruiter ON chatters(recruiter_id);
+
+-- ── Ajout du rôle recruiter dans la contrainte CHECK ────
+-- On recrée la contrainte pour inclure 'recruiter'
+DO $$
+BEGIN
+    -- Supprime l'ancienne contrainte si elle n'inclut pas recruiter
+    IF EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname='users_role_check' AND conrelid='users'::regclass
+    ) THEN
+        ALTER TABLE users DROP CONSTRAINT users_role_check;
+    END IF;
+    -- Recrée avec les 3 rôles
+    ALTER TABLE users ADD CONSTRAINT users_role_check
+        CHECK (role IN ('manager','chatter','recruiter'));
+EXCEPTION WHEN others THEN NULL;
+END $$;

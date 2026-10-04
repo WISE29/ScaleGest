@@ -21,6 +21,7 @@ load_dotenv()
 from database import get_db, close_db, init_db, run_sql, commit
 from auth import auth_bp, load_user_by_id
 from chatter_space import chatter_bp
+from recruiter_space import recruiter_bp
 from models import (
     MONTHS_FR, log_action,
     get_all_chatters, get_chatter, create_chatter, update_chatter,
@@ -39,6 +40,8 @@ from models import (
     get_all_models, get_model, create_model, update_model, toggle_model_status,
     get_chatter_models, get_model_chatters,
     assign_model, remove_model, get_unassigned_models,
+    get_all_recruiters, get_recruiter, get_recruiter_chatters,
+    affiliate_chatter, get_recruiter_commission,
 )
 from utils.calculations import manager_total_remuneration, objective_stats
 from utils.payroll import compute_payroll, save_payroll
@@ -112,6 +115,21 @@ def create_app() -> Flask:
         """Convertit en str et coupe à n caractères — remplace str(v)[:n] dans Jinja."""
         return str(v)[:n] if v is not None else ""
 
+    @app.template_filter("money")
+    def f_money(v):
+        """
+        Rend un montant sous forme HTML avec data-amount pour la conversion de devise JS.
+        Usage dans les templates : {{ montant|money }}
+        """
+        from markupsafe import Markup
+        try:
+            val = float(v)
+        except (TypeError, ValueError):
+            val = 0.0
+        return Markup(
+            f'<span class="money" data-amount="{val:.2f}">{val:,.2f} €</span>'
+        )
+
     @app.template_filter("date_prev")
     def f_date_prev(d):
         from datetime import date, timedelta
@@ -132,6 +150,7 @@ def create_app() -> Flask:
     app.register_blueprint(auth_bp)
     app.register_blueprint(manager_bp)
     app.register_blueprint(chatter_bp)
+    app.register_blueprint(recruiter_bp)
 
     # ── Erreurs ────────────────────────────────────────────────────
     @app.errorhandler(403)
@@ -709,6 +728,25 @@ def user_toggle(user_id):
     return redirect(url_for("manager.users_list"))
 
 
+@manager_bp.route("/users/<int:user_id>/delete", methods=["POST"])
+@manager_required
+def user_delete(user_id):
+    """Supprime le compte de connexion uniquement — les données chatter sont conservées."""
+    from database import run_sql, commit
+    row = run_sql("SELECT username, role FROM users WHERE id=%s", (user_id,), fetch="one")
+    if not row:
+        flash("Compte introuvable.", "error")
+        return redirect(url_for("manager.users_list"))
+    if row["role"] == "manager":
+        flash("Impossible de supprimer le compte manager.", "error")
+        return redirect(url_for("manager.users_list"))
+    run_sql("DELETE FROM users WHERE id=%s", (user_id,))
+    commit()
+    log_action("DELETE_USER", f"Compte supprimé : {row['username']}")
+    flash(f"Compte « {row['username']} » supprimé. Les données associées sont conservées.", "success")
+    return redirect(url_for("manager.users_list"))
+
+
 # ── Paramètres ────────────────────────────────────────────────────────────────
 
 @manager_bp.route("/settings")
@@ -763,6 +801,70 @@ def api_chatter_breakdown(year, month):
         "labels": [r["name"] for r in rows],
         "values": [float(r["total"]) for r in rows],
     })
+
+
+# ─── Routes Recruteurs ───────────────────────────────────────────────────────
+
+@manager_bp.route("/recruiters")
+@manager_required
+def recruiters_list():
+    today  = date.today()
+    month, year = today.month, today.year
+    recruiters = get_all_recruiters()
+    commissions = {}
+    for r in recruiters:
+        commissions[r["id"]] = get_recruiter_commission(r["id"], month, year)
+    return render_template(
+        "manager/recruiters.html",
+        recruiters=recruiters, commissions=commissions,
+        month_name=MONTHS_FR[month], year=year,
+    )
+
+
+@manager_bp.route("/recruiters/<int:recruiter_id>")
+@manager_required
+def recruiter_detail(recruiter_id):
+    recruiter = get_recruiter(recruiter_id)
+    if not recruiter:
+        abort(404)
+    today = date.today()
+    month = int(request.args.get("month", today.month))
+    year  = int(request.args.get("year",  today.year))
+    commission_data = get_recruiter_commission(recruiter_id, month, year)
+    all_active = get_all_chatters(status="active")
+    affiliated_ids = {c["chatter"]["id"] for c in commission_data["details"]}
+    available = [c for c in all_active if c["id"] not in affiliated_ids]
+    return render_template(
+        "manager/recruiter_detail.html",
+        recruiter=recruiter,
+        commission_data=commission_data,
+        available=available,
+        month=month, year=year, month_name=MONTHS_FR[month],
+        available_months=get_available_months(),
+        months_fr=MONTHS_FR,
+    )
+
+
+@manager_bp.route("/recruiters/<int:recruiter_id>/affiliate", methods=["POST"])
+@manager_required
+def recruiter_affiliate(recruiter_id):
+    chatter_id = request.form.get("chatter_id")
+    if not chatter_id:
+        flash("Chatter requis.", "error")
+        return redirect(url_for("manager.recruiter_detail", recruiter_id=recruiter_id))
+    affiliate_chatter(int(chatter_id), recruiter_id)
+    c = get_chatter(int(chatter_id))
+    log_action("AFFILIATE", f"Chatter {c['name']} affilié au recruteur {recruiter_id}")
+    flash(f"« {c['name']} » affilié.", "success")
+    return redirect(url_for("manager.recruiter_detail", recruiter_id=recruiter_id))
+
+
+@manager_bp.route("/recruiters/<int:recruiter_id>/unaffiliate/<int:chatter_id>", methods=["POST"])
+@manager_required
+def recruiter_unaffiliate(recruiter_id, chatter_id):
+    affiliate_chatter(chatter_id, None)
+    flash("Affiliation retirée.", "success")
+    return redirect(url_for("manager.recruiter_detail", recruiter_id=recruiter_id))
 
 
 # ─── Routes Modèles ──────────────────────────────────────────────────────────
@@ -892,6 +994,8 @@ def _root_redirect():
     if current_user.is_authenticated:
         if current_user.role == "manager":
             return redirect(url_for("manager.dashboard"))
+        if current_user.role == "recruiter":
+            return redirect(url_for("recruiter_space.dashboard"))
         return redirect(url_for("chatter_space.dashboard"))
     return redirect(url_for("auth.login"))
 

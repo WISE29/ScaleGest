@@ -1004,3 +1004,40 @@ code { background:var(--surface-2); border:1px solid var(--border); border-radiu
   .payslip-amount { font-size: var(--fs-xl); }
 }
 
+
+/* ── Sélecteur de devise ─────────────────────────────────────────── */
+.currency-select-wrap {
+  position: relative;
+}
+.currency-select {
+  /* Reset des styles généraux des select */
+  width: auto !important;
+  min-width: 0 !important;
+  padding: 5px 28px 5px 10px !important;
+  height: 36px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: var(--fs-xs) !important;
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+  background-image: var(--select-arrow) !important;
+  background-repeat: no-repeat !important;
+  background-position: right 7px center !important;
+  background-size: 12px !important;
+  transition: border-color var(--t-fast), background var(--t-fast);
+  appearance: none;
+  -webkit-appearance: none;
+}
+.currency-select:hover { border-color: var(--orange); }
+.currency-select:focus {
+  outline: none;
+  border-color: var(--orange);
+  box-shadow: 0 0 0 3px var(--orange-ring);
+  background-color: var(--surface-1);
+}
+/* Masqué sur très petit écran */
+@media (max-width: 480px) {
+  .currency-select-wrap { display: none; }
+}

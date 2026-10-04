@@ -248,7 +248,9 @@ def _apply_sqlite_schema(conn):
             date_joined TEXT NOT NULL,
             notes TEXT,
             shift_start TEXT,
-            shift_end TEXT
+            shift_end TEXT,
+            recruiter_id INTEGER,
+            FOREIGN KEY (recruiter_id) REFERENCES users(id) ON DELETE SET NULL
         )
     """)
     conn.execute("""

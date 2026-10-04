@@ -10,7 +10,7 @@
     <form method="post" action="{{ url_for('manager.user_add') }}" class="form-card-inline">
       <div class="form-group">
         <label>Identifiant <span class="required">*</span></label>
-        <input type="text" name="username" required placeholder="ex : jodess" />
+        <input type="text" name="username" required placeholder="ex : jodess" autofocus />
       </div>
       <div class="form-group">
         <label>Mot de passe <span class="required">*</span></label>
@@ -18,13 +18,14 @@
       </div>
       <div class="form-group">
         <label>Rôle</label>
-        <select name="role">
+        <select name="role" id="role-select">
           <option value="chatter">Chatter</option>
+          <option value="recruiter">Recruteur</option>
           <option value="manager">Manager</option>
         </select>
       </div>
-      <div class="form-group">
-        <label>Chatter associé (si rôle Chatter)</label>
+      <div class="form-group" id="chatter-link-group">
+        <label>Chatter associé <span class="text-muted">(rôle Chatter uniquement)</span></label>
         <select name="chatter_id">
           <option value="">— Aucun —</option>
           {% for c in chatters %}
@@ -32,33 +33,55 @@
           {% endfor %}
         </select>
       </div>
-      <div class="form-actions"><button type="submit" class="btn btn-primary">Créer</button></div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Créer</button>
+      </div>
     </form>
   </div>
 
   <!-- Liste des comptes -->
   <div class="card">
-    <div class="card-title">Comptes existants</div>
+    <div class="card-title">Comptes existants ({{ users|length }})</div>
     <table class="table">
-      <thead><tr><th>Identifiant</th><th>Rôle</th><th>Chatter</th><th>Statut</th><th>Actions</th></tr></thead>
+      <thead>
+        <tr><th>Identifiant</th><th>Rôle</th><th>Associé à</th><th>Statut</th><th>Actions</th></tr>
+      </thead>
       <tbody>
       {% for u in users %}
       <tr>
         <td><strong>{{ u.username }}</strong></td>
-        <td><span class="badge {% if u.role=='manager' %}badge-active{% else %}badge-inactive{% endif %}">{{ u.role }}</span></td>
+        <td>
+          {% if u.role == 'manager' %}
+            <span class="badge badge-active">Manager</span>
+          {% elif u.role == 'recruiter' %}
+            <span class="badge" style="background:var(--teal-soft);color:var(--teal-text)">Recruteur</span>
+          {% else %}
+            <span class="badge badge-inactive">Chatter</span>
+          {% endif %}
+        </td>
         <td>{{ u.chatter_name or '—' }}</td>
         <td>
+          {% if u.role != 'manager' %}
           <form method="post" action="{{ url_for('manager.user_toggle', user_id=u.id) }}" style="display:inline">
             <button class="btn btn-xs {% if u.active %}btn-warning{% else %}btn-secondary{% endif %}">
               {% if u.active %}Désactiver{% else %}Activer{% endif %}
             </button>
           </form>
+          {% else %}
+          <span class="muted">—</span>
+          {% endif %}
         </td>
-        <td>
+        <td style="display:flex;gap:4px;flex-wrap:wrap">
           <button class="btn btn-xs btn-ghost" onclick="togglePwdForm({{ u.id }})">🔑 MDP</button>
+          {% if u.role != 'manager' %}
+          <form method="post" action="{{ url_for('manager.user_delete', user_id=u.id) }}"
+                onsubmit="return confirm('Supprimer le compte {{ u.username }} ? Les données seront conservées.')">
+            <button class="btn btn-xs btn-danger">Supprimer</button>
+          </form>
+          {% endif %}
           <form id="pwd-{{ u.id }}" method="post"
                 action="{{ url_for('manager.user_reset_password', user_id=u.id) }}"
-                style="display:none;margin-top:6px" class="inline-form-row">
+                style="display:none;margin-top:6px;width:100%" class="inline-form-row">
             <input type="password" name="password" placeholder="Nouveau MDP" required style="min-width:120px" />
             <button type="submit" class="btn btn-xs btn-primary">OK</button>
           </form>
@@ -73,9 +96,19 @@
 {% endblock %}
 {% block scripts %}
 <script>
-function togglePwdForm(id){
-  var f=document.getElementById('pwd-'+id);
-  f.style.display = f.style.display==='none'?'flex':'none';
+function togglePwdForm(id) {
+  var f = document.getElementById('pwd-' + id);
+  f.style.display = f.style.display === 'none' ? 'flex' : 'none';
+}
+// Masquer "Chatter associé" si le rôle n'est pas chatter
+var roleSelect = document.getElementById('role-select');
+var chatterGroup = document.getElementById('chatter-link-group');
+if (roleSelect && chatterGroup) {
+  function updateChatterGroup() {
+    chatterGroup.style.display = roleSelect.value === 'chatter' ? '' : 'none';
+  }
+  roleSelect.addEventListener('change', updateChatterGroup);
+  updateChatterGroup();
 }
 </script>
 {% endblock %}
