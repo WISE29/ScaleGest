@@ -47,21 +47,90 @@ function getCurrentCurrency() {
 function formatMoney(amountEUR, currencyCode) {
   var c = RATES[currencyCode] || RATES['EUR'];
   var converted = amountEUR * c.rate;
-  // Arrondi adapté : FCFA sans décimale, autres avec 2 décimales
   var decimals = (currencyCode === 'XOF') ? 0 : 2;
   var formatted = converted.toLocaleString('fr-FR', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals
   });
-  return c.before ? c.symbol + ' ' + formatted : formatted + ' ' + c.symbol;
+  return c.before ? c.symbol + '\u00a0' + formatted : formatted + '\u00a0' + c.symbol;
+}
+
+/*
+  Stratégie devise :
+  Au premier chargement on "tagge" tous les nœuds de texte contenant
+  un montant en euros (pattern "1 234,56 €" ou "1234.56 €") avec
+  data-amount-eur sur leur élément parent.
+  applyDevise() relit ces attributs et reformate l'affichage.
+*/
+var MONEY_RE = /(-?\d[\d\s]*(?:[.,]\d{1,2})?)\s*€/g;
+
+function _stripSpaces(s) {
+  // normalise les espaces insécables et espaces normaux utilisés comme séparateur milliers
+  return s.replace(/[\u00a0\s]/g, '');
+}
+
+function _parseEurAmount(str) {
+  // "1 234,56" ou "1234.56" → float
+  var clean = _stripSpaces(str).replace(',', '.');
+  return parseFloat(clean) || 0;
+}
+
+function tagMoneyNodes() {
+  // Parcourt tous les éléments feuilles et trouve les montants en €
+  var walker = document.createTreeWalker(
+    document.body,
+    NodeFilter.SHOW_TEXT,
+    null,
+    false
+  );
+  var node;
+  while ((node = walker.nextNode())) {
+    var text = node.nodeValue;
+    if (!text || text.indexOf('€') === -1) continue;
+    var parent = node.parentNode;
+    // On ne re-tague pas ce qui est déjà tagué ni les scripts/styles
+    if (!parent || parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE') continue;
+    if (parent.hasAttribute && parent.hasAttribute('data-amount-eur')) continue;
+
+    // Cherche TOUS les montants dans ce nœud
+    var matches = [];
+    var m;
+    MONEY_RE.lastIndex = 0;
+    while ((m = MONEY_RE.exec(text)) !== null) {
+      matches.push({ full: m[0], amount: _parseEurAmount(m[1]) });
+    }
+    if (matches.length === 0) continue;
+
+    if (matches.length === 1 && text.trim() === matches[0].full.trim()) {
+      // Nœud simple : on tague le parent directement
+      parent.setAttribute('data-amount-eur', matches[0].amount.toFixed(2));
+      parent.setAttribute('data-money-original', text);
+    } else {
+      // Nœud mixte : on remplace le texte par des spans tagués
+      var html = text;
+      MONEY_RE.lastIndex = 0;
+      html = html.replace(MONEY_RE, function(full, num) {
+        var amt = _parseEurAmount(num);
+        return '<span data-amount-eur="' + amt.toFixed(2) + '" data-money-original="' + full + '">' + full + '</span>';
+      });
+      var span = document.createElement('span');
+      span.innerHTML = html;
+      parent.replaceChild(span, node);
+    }
+  }
 }
 
 function applyDevise(code) {
-  document.querySelectorAll('.money[data-amount]').forEach(function (el) {
-    var raw = parseFloat(el.getAttribute('data-amount')) || 0;
-    el.textContent = formatMoney(raw, code);
+  var c = RATES[code] || RATES['EUR'];
+  document.querySelectorAll('[data-amount-eur]').forEach(function (el) {
+    var raw = parseFloat(el.getAttribute('data-amount-eur')) || 0;
+    if (code === 'EUR') {
+      // Restaure le texte original
+      el.textContent = el.getAttribute('data-money-original') || el.textContent;
+    } else {
+      el.textContent = formatMoney(raw, code);
+    }
   });
-  // Met à jour aussi le total en temps réel de la saisie CA
   updateSalesTotal();
 }
 
@@ -70,7 +139,10 @@ function initDevise() {
   if (!sel) return;
   var saved = getCurrentCurrency();
   sel.value = saved;
-  applyDevise(saved);
+  // On tague d'abord (page rendue en EUR par Flask)
+  tagMoneyNodes();
+  // Puis on convertit si nécessaire
+  if (saved !== 'EUR') applyDevise(saved);
   sel.addEventListener('change', function () {
     localStorage.setItem(CURRENCY_KEY, this.value);
     applyDevise(this.value);

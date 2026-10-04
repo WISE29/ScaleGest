@@ -367,6 +367,30 @@ def _apply_sqlite_schema(conn):
             UNIQUE(chatter_id, month, year)
         )
     """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            label TEXT NOT NULL,
+            description TEXT
+        )
+    """)
+    _insert_default_settings(conn)
+
+
+def _insert_default_settings(conn):
+    defaults = [
+        ('chatter_rate',          '0.08', 'Commission chatter (%)',              'Taux de commission des chatters sur leur CA net'),
+        ('manager_team_rate',     '0.02', 'Commission équipe manager (%)',        "Taux appliqué au CA total de l'équipe"),
+        ('manager_personal_rate', '0.05', 'Commission personnelle manager (%)',   'Taux appliqué au CA personnel du manager'),
+        ('recruiter_rate',        '0.01', 'Commission recruteur (%)',             'Taux appliqué au CA des chatters affiliés'),
+        ('manager_fixed',         '0',    'Fixe mensuel manager (€)',             'Montant fixe ajouté à la rémunération manager chaque mois'),
+    ]
+    for key, value, label, desc in defaults:
+        conn.execute(
+            "INSERT OR IGNORE INTO settings (key, value, label, description) VALUES (?, ?, ?, ?)",
+            (key, value, label, desc)
+        )
 
 
 def _ensure_manager(app):

@@ -42,6 +42,8 @@ from models import (
     assign_model, remove_model, get_unassigned_models,
     get_all_recruiters, get_recruiter, get_recruiter_chatters,
     affiliate_chatter, get_recruiter_commission,
+    get_all_settings, update_setting, get_rates,
+    manager_remuneration_full,
 )
 from utils.calculations import manager_total_remuneration, objective_stats
 from utils.payroll import compute_payroll, save_payroll
@@ -747,16 +749,55 @@ def user_delete(user_id):
     return redirect(url_for("manager.users_list"))
 
 
+# ── Ma rémunération manager ───────────────────────────────────────────────────
+
+@manager_bp.route("/my-pay")
+@manager_required
+def my_pay():
+    today = date.today()
+    month = int(request.args.get("month", today.month))
+    year  = int(request.args.get("year",  today.year))
+
+    ca_chatters = get_month_ca_chatters(month, year)
+    ca_manager  = get_month_ca_manager(month, year)
+    rem         = manager_total_remuneration(ca_chatters, ca_manager)
+    rates       = get_rates()
+    avail       = get_available_months()
+
+    return render_template(
+        "manager/my_pay.html",
+        rem=rem, rates=rates,
+        month=month, year=year, month_name=MONTHS_FR[month],
+        available_months=avail,
+    )
+
+
 # ── Paramètres ────────────────────────────────────────────────────────────────
 
-@manager_bp.route("/settings")
+@manager_bp.route("/settings", methods=["GET", "POST"])
 @manager_required
 def settings():
+    if request.method == "POST":
+        keys = ["chatter_rate", "manager_team_rate", "manager_personal_rate",
+                "recruiter_rate", "manager_fixed"]
+        for key in keys:
+            val = request.form.get(key, "").strip().replace(",", ".")
+            try:
+                float(val)
+                update_setting(key, val)
+            except ValueError:
+                pass
+        log_action("UPDATE_SETTINGS", "Paramètres de rémunération mis à jour")
+        flash("Paramètres enregistrés.", "success")
+        return redirect(url_for("manager.settings"))
+
+    settings_list = get_all_settings()
     logs = run_sql(
         "SELECT * FROM audit_log ORDER BY timestamp DESC LIMIT 50",
         fetch="all"
     ) or []
-    return render_template("manager/settings.html", logs=logs)
+    return render_template("manager/settings.html",
+                           settings_list=settings_list, logs=logs)
 
 
 # ── API JSON pour Chart.js ────────────────────────────────────────────────────

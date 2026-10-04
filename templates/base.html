@@ -103,6 +103,11 @@
        data-label="Comptes">
       <span class="nav-icon-wrap">🔑</span><span class="nav-item-text">Comptes</span>
     </a>
+    <a href="{{ url_for('manager.my_pay') }}"
+       class="nav-item {% if request.endpoint == 'manager.my_pay' %}active{% endif %}"
+       data-label="Ma rémunération">
+      <span class="nav-icon-wrap">💼</span><span class="nav-item-text">Ma rémunération</span>
+    </a>
     <a href="{{ url_for('manager.settings') }}"
        class="nav-item {% if request.endpoint == 'manager.settings' %}active{% endif %}"
        data-label="Paramètres">

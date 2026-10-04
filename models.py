@@ -639,6 +639,7 @@ def affiliate_chatter(chatter_id: int, recruiter_id: int | None) -> None:
 
 def get_recruiter_commission(recruiter_id: int, month: int, year: int) -> dict:
     """Calcule la commission du recruteur pour un mois donné."""
+    from utils.calculations import recruiter_commission as _calc_commission
     chatters = get_recruiter_chatters(recruiter_id)
     total_ca = 0.0
     details  = []
@@ -652,10 +653,66 @@ def get_recruiter_commission(recruiter_id: int, month: int, year: int) -> dict:
             "avg":          s["avg"],
             "final_salary": s["final_salary"],
         })
-    commission = round(total_ca * RECRUITER_RATE, 2)
+    rate       = get_setting("recruiter_rate", 0.01)
+    commission = round(total_ca * rate, 2)
     return {
         "total_ca":   total_ca,
         "commission": commission,
-        "rate":       RECRUITER_RATE,
+        "rate":       rate,
         "details":    details,
+    }
+
+
+# ─── Paramètres configurables ─────────────────────────────────────────────────
+
+def get_all_settings() -> list:
+    return run_sql("SELECT * FROM settings ORDER BY key", fetch="all") or []
+
+
+def get_setting(key: str, default: float = 0.0) -> float:
+    row = run_sql("SELECT value FROM settings WHERE key=%s", (key,), fetch="one")
+    try:
+        return float(row["value"]) if row else default
+    except (TypeError, ValueError):
+        return default
+
+
+def update_setting(key: str, value: str) -> None:
+    run_sql("UPDATE settings SET value=%s WHERE key=%s", (value, key))
+    commit()
+
+
+def get_rates() -> dict:
+    """Retourne tous les taux depuis la base."""
+    return {
+        "chatter_rate":          get_setting("chatter_rate",          0.08),
+        "manager_team_rate":     get_setting("manager_team_rate",     0.02),
+        "manager_personal_rate": get_setting("manager_personal_rate", 0.05),
+        "recruiter_rate":        get_setting("recruiter_rate",        0.01),
+        "manager_fixed":         get_setting("manager_fixed",         0.0),
+    }
+
+
+def manager_remuneration_full(ca_chatters: float, ca_manager: float, month: int, year: int) -> dict:
+    """
+    Calcule la rémunération complète du manager :
+    - Commission équipe (taux DB × CA total)
+    - Commission personnelle (taux DB × CA perso)
+    - Fixe mensuel (DB)
+    """
+    rates      = get_rates()
+    ca_total   = ca_chatters + ca_manager
+    comm_team  = round(ca_total   * rates["manager_team_rate"],     2)
+    comm_perso = round(ca_manager * rates["manager_personal_rate"], 2)
+    fixe       = rates["manager_fixed"]
+    total      = round(comm_team + comm_perso + fixe, 2)
+    return {
+        "ca_chatters":    ca_chatters,
+        "ca_manager":     ca_manager,
+        "ca_total":       ca_total,
+        "commission_team":     comm_team,
+        "commission_personal": comm_perso,
+        "fixed":          fixe,
+        "total":          total,
+        "rates":          rates,
     }

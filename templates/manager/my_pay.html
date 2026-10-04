@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Ma Rémunération — Scale Gest{% endblock %}
+{% block page_title %}💼 Ma rémunération{% endblock %}
+{% block content %}
+
+<!-- Sélecteur de mois -->
+<div class="filters-bar">
+  <form method="get" class="filters-form">
+    <select name="month" onchange="this.form.submit()">
+      {% for m in available_months %}
+      <option value="{{ m.month }}" data-year="{{ m.year }}"
+        {% if m.month == month and m.year == year %}selected{% endif %}>
+        {{ months_fr[m.month] }} {{ m.year }}
+      </option>
+      {% endfor %}
+    </select>
+    <input type="hidden" name="year" id="year-in" value="{{ year }}" />
+  </form>
+  <a href="{{ url_for('manager.settings') }}" class="btn btn-ghost btn-sm">⚙️ Modifier les taux →</a>
+</div>
+
+<!-- KPIs -->
+<div class="grid-4">
+  <div class="card card-kpi">
+    <div class="card-label">CA des chatters</div>
+    <div class="card-value">{{ "%.2f"|format(rem.ca_chatters) }} €</div>
+  </div>
+  <div class="card card-kpi">
+    <div class="card-label">Mon CA personnel</div>
+    <div class="card-value">{{ "%.2f"|format(rem.ca_manager) }} €</div>
+  </div>
+  <div class="card card-kpi">
+    <div class="card-label">CA total équipe</div>
+    <div class="card-value">{{ "%.2f"|format(rem.ca_total) }} €</div>
+  </div>
+  <div class="card card-kpi card-accent">
+    <div class="card-label">Ma rémunération totale</div>
+    <div class="card-value text-accent">{{ "%.2f"|format(rem.total) }} €</div>
+    <div class="card-sub">{{ month_name }} {{ year }}</div>
+  </div>
+</div>
+
+<!-- Fiche détaillée -->
+<div class="card" style="max-width:600px">
+  <div class="card-title">📄 Détail — {{ month_name }} {{ year }}</div>
+
+  <div class="rem-row">
+    <span>CA total équipe</span>
+    <strong>{{ "%.2f"|format(rem.ca_total) }} €</strong>
+  </div>
+  <div class="rem-row">
+    <span>Taux commission équipe</span>
+    <strong>{{ "%.1f"|format(rates.manager_team_rate * 100) }} %</strong>
+  </div>
+  <div class="rem-row positive">
+    <span>+ Commission équipe</span>
+    <strong>{{ "%.2f"|format(rem.commission_team) }} €</strong>
+  </div>
+
+  <div class="rem-row" style="margin-top:var(--sp-3);padding-top:var(--sp-3);border-top:1px solid var(--border)">
+    <span>Mon CA personnel</span>
+    <strong>{{ "%.2f"|format(rem.ca_manager) }} €</strong>
+  </div>
+  <div class="rem-row">
+    <span>Taux commission personnelle</span>
+    <strong>{{ "%.1f"|format(rates.manager_personal_rate * 100) }} %</strong>
+  </div>
+  <div class="rem-row positive">
+    <span>+ Commission personnelle</span>
+    <strong>{{ "%.2f"|format(rem.commission_personal) }} €</strong>
+  </div>
+
+  {% if rem.fixed > 0 %}
+  <div class="rem-row positive" style="margin-top:var(--sp-3);padding-top:var(--sp-3);border-top:1px solid var(--border)">
+    <span>+ Fixe mensuel</span>
+    <strong>{{ "%.2f"|format(rem.fixed) }} €</strong>
+  </div>
+  {% endif %}
+
+  <div class="rem-row rem-total">
+    <span>= Total mensuel</span>
+    <strong>{{ "%.2f"|format(rem.total) }} €</strong>
+  </div>
+
+  <div class="card-sub" style="margin-top:var(--sp-4)">
+    <a href="{{ url_for('manager.settings') }}">Modifier les taux et le fixe →</a>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+document.querySelector('select[name="month"]')?.addEventListener('change', function () {
+  var opt = this.options[this.selectedIndex];
+  if (opt && opt.dataset.year) document.getElementById('year-in').value = opt.dataset.year;
+});
+</script>
+{% endblock %}

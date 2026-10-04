@@ -194,3 +194,28 @@ BEGIN
         CHECK (role IN ('manager','chatter','recruiter'));
 EXCEPTION WHEN others THEN NULL;
 END $$;
+
+-- ── Paramètres configurables ─────────────────────────────
+CREATE TABLE IF NOT EXISTS settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    label TEXT NOT NULL,
+    description TEXT
+);
+
+-- Valeurs par défaut (INSERT OR IGNORE pour ne pas écraser si déjà présent)
+INSERT INTO settings (key, value, label, description) VALUES
+  ('chatter_rate',    '0.08', 'Commission chatter (%)',        'Taux de commission des chatters sur leur CA net')
+  ON CONFLICT (key) DO NOTHING;
+INSERT INTO settings (key, value, label, description) VALUES
+  ('manager_team_rate', '0.02', 'Commission équipe manager (%)', 'Taux appliqué au CA total de l''équipe')
+  ON CONFLICT (key) DO NOTHING;
+INSERT INTO settings (key, value, label, description) VALUES
+  ('manager_personal_rate', '0.05', 'Commission personnelle manager (%)', 'Taux appliqué au CA personnel du manager')
+  ON CONFLICT (key) DO NOTHING;
+INSERT INTO settings (key, value, label, description) VALUES
+  ('recruiter_rate', '0.01', 'Commission recruteur (%)', 'Taux appliqué au CA des chatters affiliés')
+  ON CONFLICT (key) DO NOTHING;
+INSERT INTO settings (key, value, label, description) VALUES
+  ('manager_fixed', '0', 'Fixe mensuel manager (€)', 'Montant fixe ajouté à la rémunération manager chaque mois')
+  ON CONFLICT (key) DO NOTHING;

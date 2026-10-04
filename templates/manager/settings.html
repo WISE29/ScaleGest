@@ -1,24 +1,53 @@
 {% extends "base.html" %}
-{% block title %}Paramètres{% endblock %}
+{% block title %}Paramètres — Scale Gest{% endblock %}
 {% block page_title %}⚙️ Paramètres{% endblock %}
 {% block content %}
+
 <div class="grid-2">
+
+  <!-- Règles de rémunération éditables -->
   <div class="card">
     <div class="card-title">Règles de rémunération</div>
-    <table class="table">
-      <tbody>
-        <tr><td>Commission chatter</td><td><strong>8 % du CA net</strong></td></tr>
-        <tr><td>Commission équipe (manager)</td><td><strong>2 % du CA total</strong></td></tr>
-        <tr><td>Commission personnelle (manager)</td><td><strong>5 % du CA perso</strong></td></tr>
-      </tbody>
-    </table>
-    <p class="muted small mt-1">Configurables en V3.</p>
+    <form method="post">
+      {% for s in settings_list %}
+      <div class="form-group">
+        <label>{{ s.label }}</label>
+        {% if s.description %}
+        <p class="muted small" style="margin-bottom:6px">{{ s.description }}</p>
+        {% endif %}
+        <div style="display:flex;align-items:center;gap:var(--sp-2)">
+          <input type="number" name="{{ s.key }}"
+                 value="{{ s.value }}"
+                 step="0.001" min="0"
+                 style="max-width:160px" />
+          {% if s.key == 'manager_fixed' %}
+          <span class="muted">€ / mois</span>
+          {% else %}
+          <span class="muted">
+            (= {{ "%.1f"|format(s.value|float * 100) }} %)
+          </span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+      </div>
+    </form>
   </div>
+
+  <!-- Info base de données -->
   <div class="card">
     <div class="card-title">Base de données</div>
     <p class="text-muted">PostgreSQL — connexion via <code>DATABASE_URL</code></p>
+    <div style="margin-top:var(--sp-4)">
+      <a href="{{ url_for('manager.my_pay') }}" class="btn btn-secondary">💼 Ma rémunération →</a>
+    </div>
   </div>
+
 </div>
+
+<!-- Journal des 50 dernières actions -->
 <div class="card">
   <div class="card-title">📋 50 dernières actions</div>
   {% if logs %}
@@ -34,6 +63,9 @@
     {% endfor %}
     </tbody>
   </table>
-  {% else %}<p class="muted">Aucune action.</p>{% endif %}
+  {% else %}
+  <p class="muted">Aucune action.</p>
+  {% endif %}
 </div>
+
 {% endblock %}
